@@ -39,6 +39,13 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
+  if (
+    request.nextUrl.pathname.startsWith("/google") &&
+    request.nextUrl.pathname.endsWith(".html")
+  ) {
+    return NextResponse.next();
+  }
+
   if (user && request.nextUrl.pathname.startsWith("/auth")) {
     const url = request.nextUrl.clone();
     url.pathname = "/";
