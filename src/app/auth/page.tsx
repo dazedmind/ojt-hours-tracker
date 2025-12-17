@@ -34,7 +34,7 @@ export default function AuthPage() {
     try {
       const redirectUrl = typeof window !== 'undefined' 
         ? `${window.location.origin}/auth/callback`
-        : `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/auth/callback`;
+        : `${process.env.NEXT_PUBLIC_BASE_URL}/auth/callback`;
 
       await supabase.auth.signInWithOAuth({
         provider: "google",

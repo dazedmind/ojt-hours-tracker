@@ -129,7 +129,7 @@ export default function EntriesCard({
           <div className="flex justify-between items-center">
             <h3 className="font-semibold text-lg">
               {new Date(entry.date).toLocaleDateString("en-US", {
-                weekday: "long",
+                weekday: "short",
                 year: "numeric",
                 month: "long",
                 day: "numeric",
@@ -147,14 +147,14 @@ export default function EntriesCard({
             )}
           </div>
           <div className="font-mono text-md">
-            <span className="font-bold text-primary">
+            <span className="text-primary">
               {totalHours.toFixed(2)} hours
             </span>
           </div>
         </div>
 
         {/* BUTTON ACTIONS */}
-        <div className="mt-2 flex flex-col lg:flex-row justify-end gap-3 items-center">
+        <div className="mt-2 flex flex-col md:flex-row justify-end gap-3 items-center">
           <Dialog key={index}>
             <DialogTrigger asChild>
               <Button
@@ -170,7 +170,7 @@ export default function EntriesCard({
                 className="w-fit"
               >
                 <SquarePen className="w-4 h-4" />
-                Edit
+                <p className="hidden md:block">Edit</p>
               </Button>
             </DialogTrigger>
             <DialogContent className="max-w-md">
@@ -204,7 +204,7 @@ export default function EntriesCard({
           <Button
             disabled={isDeleting}
             variant="destructive"
-            className="w-full lg:w-fit"
+            className="w-full md:w-fit"
             size="sm"
             onClick={() => handleDeleteEntry(entry.id)}
           >

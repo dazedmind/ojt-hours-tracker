@@ -86,7 +86,7 @@ export default function EntryForm({
                   placeholder="Time In"
                   value={data.time_in}
                   onChange={handleInputChange}
-                  className="pl-10 text-base"
+                  className="text-base"
                 />
                 <span className="text-xs text-gray-500">Time In</span>
               </div>
@@ -97,7 +97,7 @@ export default function EntryForm({
                   placeholder="Time Out"
                   value={data.time_out}
                   onChange={handleInputChange}
-                  className="pl-10 text-base"
+                  className="text-base"
                 />
                 <span className="text-xs text-gray-500">Time Out</span>
               </div>

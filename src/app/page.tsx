@@ -11,22 +11,10 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
 import { AlertCircle, FlagTriangleLeft, History, Hourglass } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { ThemeSwitcher } from "@/components/theme-switcher";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuLabel,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-
-import { toast } from "react-hot-toast";
 import useAuthUser from "@/hooks/useAuthUser";
-import Image from "next/image";
-import { createClient } from "@/utils/supabase/client";
 import useEntryForm from "@/hooks/useEntryForm";
 import {
   actionCreateEntry,
@@ -37,6 +25,9 @@ import {
   EntryForm,
 } from "@/modules/entries";
 import { useTheme } from "next-themes";
+import { Separator } from "@/components/ui/separator";
+import NavBar from "./modules/layout/NavBar";
+import toast from "react-hot-toast";
 
 export default function Home() {
   const {
@@ -164,48 +155,11 @@ export default function Home() {
     });
   };
 
-  const onClickLogout = async () => {
-    const supabase = createClient();
-    const { error } = await supabase.auth.signOut();
-
-    if (error) {
-      toast.error(error.message);
-      return;
-    }
-
-    location.reload();
-  };
-
   return (
-    <div className="container mx-auto p-4 max-w-4xl">
-      <div className="flex justify-between">
-        <h1 className="text-3xl font-bold mb-6 text-center">
-          OJT Hours Tracker
-        </h1>
-        <div className="flex gap-3 items-center justify-center">
-          <ThemeSwitcher />
-          {userLoading ? (
-            <div className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" />
-          ) : (
-            <DropdownMenu>
-              <DropdownMenuTrigger>
-                <Image
-                  width={100}
-                  height={100}
-                  src={user?.user_metadata.avatar_url}
-                  alt="user pic"
-                  className="h-8 w-8 rounded-full"
-                />
-              </DropdownMenuTrigger>
-              <DropdownMenuContent>
-                <DropdownMenuLabel className="text-center">
-                  <Button onClick={onClickLogout}>Logout</Button>
-                </DropdownMenuLabel>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )}
-        </div>
-      </div>
+    <div className="container mx-auto max-w-4xl px-4">
+      <header>
+        <NavBar />
+      </header>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
         <Card className="shadow-md">
@@ -261,12 +215,13 @@ export default function Home() {
           </CardFooter>
         </Card>
 
-        <Card className="shadow-md gap-6">
+        <Card className="shadow-md">
           <CardHeader className="gap-0">
             <CardTitle className="flex items-center gap-2"><Hourglass className="w-4 h-4" />Record Time Entry</CardTitle>
             <CardDescription>Record your time entry here.</CardDescription>
+            <Separator className="my-2"/>
           </CardHeader>
-          <CardContent>
+          <div className="px-6">
             <EntryForm
               data={entryValue}
               handleInputChange={handleInputChange}
@@ -274,7 +229,7 @@ export default function Home() {
               isUpdate={false}
               handleAddEntry={handleAddEntry}
             />
-          </CardContent>
+            </div>
         </Card>
       </div>
 
@@ -282,6 +237,7 @@ export default function Home() {
         <CardHeader className="gap-0">
           <CardTitle className="flex items-center gap-2"><History className="w-4 h-4" />Time Entry History</CardTitle>
           <CardDescription>View your time entry history here.</CardDescription>
+          <Separator className="my-2"/>
         </CardHeader>
         <CardContent>
           {loading && (
