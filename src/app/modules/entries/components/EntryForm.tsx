@@ -2,9 +2,20 @@ import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Calendar, Clock } from "lucide-react";
+import { CalendarIcon, ChevronDownIcon, Clock, Coffee } from "lucide-react";
 import { NewTimeEntry } from "@/utils/types";
+import { Popover, PopoverContent, PopoverTrigger } from "@radix-ui/react-popover";
+import { Calendar } from "@/components/ui/calendar";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useState } from "react";
 
+const dateFormatter = (date: Date) => {
+  return date.toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+};
 export default function EntryForm({
   data,
   isUpdate,
@@ -20,46 +31,75 @@ export default function EntryForm({
   handleAddEntry?: () => Promise<void>;
   handleUpdateEntry?: () => Promise<void>;
 }) {
+
+  const [date, setDate] = useState<Date | undefined>(undefined);
+  const [open, setOpen] = useState<boolean>(false);
+
   return (
-    <Card className="border-none bg-transparent">
-      <CardContent>
+      <main>
         <div className="space-y-4">
           <div>
-            <Label htmlFor="date" className="flex items-center gap-2">
-              <Calendar className="h-4 w-4" /> Date
+            <Label htmlFor="date" className="flex items-center gap-1 mb-2">
+              <CalendarIcon className="w-4 h-4" />
+              Enter Date
             </Label>
-            <Input
-              id="date"
-              type="date"
-              name="date"
-              value={data.date}
-              onChange={handleInputChange}
-              className="mt-1"
-            />
+ 
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  id="date"
+                  className="w-full justify-between font-normal"
+                >
+                  {date ? dateFormatter(date) : "Select date"}
+                  <ChevronDownIcon />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent align="start">
+                <Calendar
+                  mode="single"
+                  selected={date}
+                  captionLayout="dropdown"
+                  onSelect={(date) => {
+                    setDate(date)
+                    handleInputChange({
+                      target: {
+                        name: "date",
+                        value: date?.toISOString() ?? "",
+                      },
+                    } as React.ChangeEvent<HTMLInputElement>)
+                  }}
+                />
+              </PopoverContent>
+            </Popover>
+      
           </div>
 
           <div>
-            <Label className="flex items-center gap-2">
-              <Clock className="h-4 w-4" /> Morning
+            <Label className="flex items-center gap-1">
+              <Clock className="w-4 h-4" />
+              Time In and Time Out
             </Label>
             <div className="flex gap-2 mt-1">
               <div className="w-1/2">
                 <Input
                   type="time"
-                  name="morning_time_in"
+                  name="time_in"
                   placeholder="Time In"
-                  value={data.morning_time_in}
+                  value={data.time_in}
                   onChange={handleInputChange}
+                  className="pl-10 text-base"
                 />
                 <span className="text-xs text-gray-500">Time In</span>
               </div>
               <div className="w-1/2">
                 <Input
                   type="time"
-                  name="morning_time_out"
+                  name="time_out"
                   placeholder="Time Out"
-                  value={data.morning_time_out}
+                  value={data.time_out}
                   onChange={handleInputChange}
+                  className="pl-10 text-base"
                 />
                 <span className="text-xs text-gray-500">Time Out</span>
               </div>
@@ -67,89 +107,62 @@ export default function EntryForm({
           </div>
 
           <div>
-            <Label className="flex items-center gap-2">
-              <Clock className="h-4 w-4" /> Afternoon
+            <Label htmlFor="break_time" className="flex items-center gap-1 mb-2">
+              <Coffee className="w-4 h-4" />
+              Break Time
             </Label>
-            <div className="flex gap-2 mt-1">
-              <div className="w-1/2">
-                <Input
-                  type="time"
-                  name="afternoon_time_in"
-                  placeholder="Time In"
-                  value={data.afternoon_time_in}
-                  onChange={handleInputChange}
-                />
-                <span className="text-xs text-gray-500">Time In</span>
-              </div>
-              <div className="w-1/2">
-                <Input
-                  type="time"
-                  name="afternoon_time_out"
-                  placeholder="Time Out"
-                  value={data.afternoon_time_out}
-                  onChange={handleInputChange}
-                />
-                <span className="text-xs text-gray-500">Time Out</span>
-              </div>
-            </div>
-          </div>
-
-          <div>
-            <Label className="flex items-center gap-2">
-              <Clock className="h-4 w-4" /> Evening (Optional)
-            </Label>
-            <div className="flex gap-2 mt-1">
-              <div className="w-1/2">
-                <Input
-                  type="time"
-                  name="evening_time_in"
-                  placeholder="Time In"
-                  value={data.evening_time_in}
-                  onChange={handleInputChange}
-                />
-                <span className="text-xs text-gray-500">Time In</span>
-              </div>
-              <div className="w-1/2">
-                <Input
-                  type="time"
-                  name="evening_time_out"
-                  placeholder="Time Out"
-                  value={data.evening_time_out}
-                  onChange={handleInputChange}
-                />
-                <span className="text-xs text-gray-500">Time Out</span>
-              </div>
-            </div>
+            <Select
+              value={data.break_time}
+              onValueChange={(value) => {
+                handleInputChange({
+                  target: {
+                    name: "break_time",
+                    value: value,
+                  },
+                } as React.ChangeEvent<HTMLInputElement>);
+              }}
+            >
+              <SelectTrigger id="break_time" className="w-full">
+                <SelectValue placeholder="Select break time" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="0">No Break</SelectItem>
+                <SelectItem value="15">15 minutes</SelectItem>
+                <SelectItem value="30">30 minutes</SelectItem>
+                <SelectItem value="60">1 hour</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </div>
-      </CardContent>
-      <CardFooter>
-        {!isUpdate ? (
-          <Button
-            disabled={isSubmitting}
-            className="w-full text-foreground"
-            onClick={handleAddEntry}
-          >
-            {isSubmitting ? (
-              <div className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" />
-            ) : (
-              <p>Add Time Entry</p>
-            )}
-          </Button>
-        ) : (
-          <Button
-            disabled={isSubmitting}
-            className="w-full text-foreground"
-            onClick={handleUpdateEntry}
-          >
-            {isSubmitting ? (
-              <div className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" />
-            ) : (
-              <p>Update Time Entry</p>
-            )}
-          </Button>
-        )}
-      </CardFooter>
-    </Card>
+
+        <div className="mt-4">
+          {!isUpdate ? (
+            <Button
+              disabled={isSubmitting}
+              className="w-full text-foreground"
+              onClick={handleAddEntry}
+            >
+              {isSubmitting ? (
+                <div className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" />
+              ) : (
+                <p>Add Time Entry</p>
+              )}
+            </Button>
+          ) : (
+            <Button
+              disabled={isSubmitting}
+              className="w-full text-foreground"
+              onClick={handleUpdateEntry}
+            >
+              {isSubmitting ? (
+                <div className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" />
+              ) : (
+                <p>Update Time Entry</p>
+              )}
+            </Button>
+          )}
+        </div>
+       
+    </main>
   );
 }

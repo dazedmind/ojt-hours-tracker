@@ -1,17 +1,16 @@
 "use client";
 
 import {
-  Sheet,
-  SheetClose,
-  SheetContent,
-  SheetDescription,
-  SheetFooter,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet";
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
 
 import { TimeEntry } from "@/utils/types";
 import { useContext, useState } from "react";
@@ -21,20 +20,32 @@ import useAuthUser from "@/hooks/useAuthUser";
 import useEntryForm from "@/hooks/useEntryForm";
 import EntryForm from "./EntryForm";
 import { actionDeleteEntry, actionUpdateEntry } from "../";
+import { Pencil, SquarePen, Trash2 } from "lucide-react";
+import { Separator } from "@/components/ui/separator";
+
+const timeFormat = (time: string) => {
+  if (!time) return "";
+  
+  const [hours, minutes] = time.split(":");
+  const hour = parseInt(hours, 10);
+  const minute = minutes.padStart(2, "0");
+  
+  // Convert 24-hour to 12-hour format
+  const period = hour >= 12 ? "PM" : "AM";
+  const hour12 = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
+  
+  return `${hour12}:${minute} ${period}`;
+};
 
 export default function EntriesCard({
   index,
   entry,
-  morningHours,
-  afternoonHours,
-  eveningHours,
+  totalInputHours,
   totalHours,
 }: {
   index: number;
   entry: TimeEntry;
-  morningHours: number;
-  afternoonHours: number;
-  eveningHours: number;
+  totalInputHours: number;
   totalHours: number;
 }) {
   const {
@@ -62,7 +73,12 @@ export default function EntriesCard({
 
     setIsSubmitting(true);
 
-    const { ok } = await actionUpdateEntry(id, user.id, entryValue);
+    const { ok } = await actionUpdateEntry(id, user.id, {
+      date: entryValue.date,
+      time_in: entryValue.time_in,
+      time_out: entryValue.time_out,
+      break_time: entryValue.break_time,
+    });
 
     if (!ok) {
       toast.error("Error adding time entry");
@@ -108,80 +124,63 @@ export default function EntriesCard({
 
   return (
     <div>
-      <div key={entry.id} className="border rounded-lg p-4">
-        <div className="flex justify-between items-center mb-2">
-          <h3 className="font-semibold">
-            {new Date(entry.date).toLocaleDateString("en-US", {
-              weekday: "long",
-              year: "numeric",
-              month: "long",
-              day: "numeric",
-            })}
-          </h3>
-          <span className="font-bold text-blue-600">
-            {totalHours.toFixed(2)} hours
-          </span>
+      <div key={entry.id} className="flex justify-between items-center">
+        <div className="flex flex-col gap-0.5">
+          {/* DATE */}
+          <div className="flex justify-between items-center">
+            <h3 className="font-semibold text-lg">
+              {new Date(entry.date).toLocaleDateString("en-US", {
+                weekday: "long",
+                year: "numeric",
+                month: "long",
+                day: "numeric",
+              })}
+            </h3>
+          </div>
+
+          {/* HOURS RENDERED */}
+          <div className="text-sm">
+            {entry.time_in && (
+              <div className="text-muted-foreground">
+                <span>Hours Rendered:</span>{" "}
+                {timeFormat(entry.time_in)} - {timeFormat(entry.time_out)}       
+              </div>
+            )}
+          </div>
+          <div className="font-mono text-md">
+            <span className="font-bold text-primary">
+              {totalHours.toFixed(2)} hours
+            </span>
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-          {entry.morning_time_in && (
-            <div>
-              <span className="font-medium">Morning:</span>{" "}
-              {entry.morning_time_in} - {entry.morning_time_out}
-              <span className="ml-2 text-gray-500">
-                ({morningHours.toFixed(2)} hrs)
-              </span>
-            </div>
-          )}
-
-          {entry.afternoon_time_in && (
-            <div>
-              <span className="font-medium">Afternoon:</span>{" "}
-              {entry.afternoon_time_in} - {entry.afternoon_time_out}
-              <span className="ml-2 text-gray-500">
-                ({afternoonHours.toFixed(2)} hrs)
-              </span>
-            </div>
-          )}
-
-          {entry.evening_time_in && (
-            <div>
-              <span className="font-medium">Evening:</span>{" "}
-              {entry.evening_time_in} - {entry.evening_time_out}
-              <span className="ml-2 text-gray-500">
-                ({eveningHours.toFixed(2)} hrs)
-              </span>
-            </div>
-          )}
-        </div>
-
-        <div className="mt-2 flex justify-end gap-3 items-center">
-          <Sheet key={index}>
-            <SheetTrigger asChild>
+        {/* BUTTON ACTIONS */}
+        <div className="mt-2 flex flex-col lg:flex-row justify-end gap-3 items-center">
+          <Dialog key={index}>
+            <DialogTrigger asChild>
               <Button
                 onClick={() =>
                   setEntryValue({
                     date: entry.date,
-                    afternoon_time_in: entry.afternoon_time_in,
-                    afternoon_time_out: entry.afternoon_time_out,
-                    evening_time_in: entry.evening_time_in,
-                    evening_time_out: entry.evening_time_out,
-                    morning_time_in: entry.morning_time_in,
-                    morning_time_out: entry.morning_time_out,
+                    time_in: entry.time_in,
+                    time_out: entry.time_out,
+                    break_time: entry.break_time,
                   })
                 }
                 variant="secondary"
+                className="w-fit"
               >
+                <SquarePen className="w-4 h-4" />
                 Edit
               </Button>
-            </SheetTrigger>
-            <SheetContent>
-              <SheetHeader>
-                <SheetTitle>Edit Time History</SheetTitle>
-                <SheetDescription>
+            </DialogTrigger>
+            <DialogContent className="max-w-md">
+              <DialogHeader>
+                <DialogTitle>Edit Time History</DialogTitle>
+                <DialogDescription>
                   Edit your time history here and click Submit to save changes.
-                </SheetDescription>
-              </SheetHeader>
+                </DialogDescription>
+              </DialogHeader>
               <EntryForm
                 data={entryValue}
                 handleInputChange={handleInputChange}
@@ -189,37 +188,37 @@ export default function EntriesCard({
                 isUpdate={true}
                 handleUpdateEntry={() => handleUpdateEntry(entry.id)}
               />
-              <SheetFooter>
-                <SheetClose asChild>
+              <DialogFooter>
+                <DialogClose asChild>
                   <Button
                     disabled={isSubmitting}
                     variant="outline"
-                    type="submit"
+                    type="button"
+                    className="w-full"
                   >
                     Close
                   </Button>
-                </SheetClose>
-              </SheetFooter>
-            </SheetContent>
-          </Sheet>
+                </DialogClose>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
           <Button
             disabled={isDeleting}
             variant="destructive"
+            className="w-full lg:w-fit"
             size="sm"
             onClick={() => handleDeleteEntry(entry.id)}
           >
             {isDeleting ? (
               <div className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" />
             ) : (
-              <p>Delete</p>
+              <p><Trash2 className="w-4 h-4" /></p>
             )}
           </Button>
         </div>
-
-        {index < entryContext!.timeEntries.length - 1 && (
-          <Separator className="mt-4" />
-        )}
       </div>
+
+      <Separator className="my-2" />
     </div>
   );
 }

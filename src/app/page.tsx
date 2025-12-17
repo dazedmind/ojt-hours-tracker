@@ -4,6 +4,7 @@ import React, { useState, useEffect, useContext } from "react";
 import {
   Card,
   CardContent,
+  CardDescription,
   CardFooter,
   CardHeader,
   CardTitle,
@@ -11,7 +12,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, FlagTriangleLeft, History, Hourglass, Plus } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ThemeSwitcher } from "@/components/theme-switcher";
@@ -35,6 +36,8 @@ import {
   EntryContext,
   EntryForm,
 } from "@/modules/entries";
+import { useTheme } from "next-themes";
+import { Separator } from "@/components/ui/separator";
 
 export default function Home() {
   const {
@@ -46,11 +49,12 @@ export default function Home() {
   } = useEntryForm();
 
   const entryContext = useContext(EntryContext);
-  const [requiredHours, setRequiredHours] = useState<number>(500);
+  const [requiredHours, setRequiredHours] = useState<number>(0);
   const [completedHours, setCompletedHours] = useState<number>(0);
   const [loading, setLoading] = useState<boolean>(true);
 
   const { user, userLoading } = useAuthUser();
+  const { theme } = useTheme();
 
   const completionPercentage: number = Math.min(
     Math.round((completedHours / requiredHours) * 100),
@@ -59,7 +63,7 @@ export default function Home() {
 
   useEffect(() => {
     if (!localStorage.getItem("hours")) {
-      localStorage.setItem("hours", requiredHours.toString());
+      localStorage.setItem("hours", "0");
     }
 
     async function fetchEntries() {
@@ -83,8 +87,6 @@ export default function Home() {
       entryContext!.setTimeEntries(
         data.map((entry) => ({
           ...entry,
-          evening_time_in: entry.evening_time_in ?? "",
-          evening_time_out: entry.evening_time_out ?? "",
         }))
       );
     }
@@ -98,20 +100,13 @@ export default function Home() {
     let totalHours = 0;
 
     entryContext!.timeEntries.forEach((entryValue) => {
-      const morningHours = calculateEntryHours(
-        entryValue.morning_time_in,
-        entryValue.morning_time_out
-      );
-      const afternoonHours = calculateEntryHours(
-        entryValue.afternoon_time_in,
-        entryValue.afternoon_time_out
-      );
-      const eveningHours = calculateEntryHours(
-        entryValue.evening_time_in,
-        entryValue.evening_time_out
+      const totalInputHours = calculateEntryHours(
+        entryValue.time_in,
+        entryValue.time_out,
+        entryValue.break_time
       );
 
-      totalHours += morningHours + afternoonHours + eveningHours;
+      totalHours += totalInputHours;
     });
 
     localStorage.setItem("entries", JSON.stringify(entryContext!.timeEntries));
@@ -127,7 +122,7 @@ export default function Home() {
     setRequiredHours(value);
   };
 
-  const handleAddEntry = async () => {
+  const handleAddEntry = async () => {    
     if (!entryValue.date) {
       alert("Please select a date");
       return;
@@ -135,15 +130,21 @@ export default function Home() {
 
     setIsSubmitting(true);
 
-    const { ok, data } = await actionCreateEntry(user!.id, entryValue);
+    const { ok, data } = await actionCreateEntry(user!.id, {
+      date: new Date(entryValue.date).toLocaleDateString(),
+      time_in: entryValue.time_in,
+      time_out: entryValue.time_out,
+      break_time: entryValue.break_time,
+    });
 
+    console.log("Data: ", data);
     if (!ok) {
       toast.error("Error creating entry");
       return;
     }
 
     if (!data) {
-      toast.error("Error creating entry");
+      toast.error("No data ent");
       return;
     }
 
@@ -158,12 +159,9 @@ export default function Home() {
 
     setEntryValue({
       date: "",
-      morning_time_in: "",
-      morning_time_out: "",
-      afternoon_time_in: "",
-      afternoon_time_out: "",
-      evening_time_in: "",
-      evening_time_out: "",
+      time_in: "",
+      time_out: "",
+      break_time: "",
     });
   };
 
@@ -212,17 +210,18 @@ export default function Home() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
         <Card className="shadow-md">
-          <CardHeader>
-            <CardTitle className="text-center">OJT Progress</CardTitle>
+          <CardHeader className="gap-0">
+            <CardTitle className="flex items-center gap-2"><FlagTriangleLeft className="w-4 h-4" />OJT Progress</CardTitle>
+            <CardDescription>View your OJT progress here.</CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col items-center justify-center">
-            <div className="relative w-48 h-48">
+            <div className="relative w-40 h-40">
               <div
                 className="w-full h-full rounded-full"
                 style={{
                   background: `conic-gradient(
-                    #3b82f6 ${completionPercentage}%,
-                    #e5e7eb ${completionPercentage}%
+                    ${theme === "dark" ? "#00472E" : "#00FF66"} ${completionPercentage}%,
+                    ${theme === "dark" ? "#232323" : "#e9e9e9"} ${completionPercentage}%
                   )`,
                 }}
               >
@@ -244,25 +243,29 @@ export default function Home() {
             </div>
           </CardContent>
           <CardFooter>
-            <div className="w-full">
+            <div className="w-full space-y-2">
               <p className="text-sm">
                 Remaining Hours: {requiredHours - completedHours}
               </p>
-              <Label htmlFor="requiredHours">Total Required Hours:</Label>
-              <Input
-                id="requiredHours"
-                type="number"
-                value={requiredHours}
-                onChange={handleRequiredHoursChange}
-                className="mt-1"
-              />
+              <span className="flex items-center justify-between gap-2">
+                <Label htmlFor="requiredHours">Total Required Hours:</Label>
+                <Input
+                  id="requiredHours"
+                  type="text"
+                  value={requiredHours}
+                  onChange={handleRequiredHoursChange}
+                  className="mt-1 w-24"
+                />
+              </span>
+            
             </div>
           </CardFooter>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Record Time Entry</CardTitle>
+        <Card className="shadow-md gap-6">
+          <CardHeader className="gap-0">
+            <CardTitle className="flex items-center gap-2"><Hourglass className="w-4 h-4" />Record Time Entry</CardTitle>
+            <CardDescription>Record your time entry here.</CardDescription>
           </CardHeader>
           <CardContent>
             <EntryForm
@@ -276,9 +279,10 @@ export default function Home() {
         </Card>
       </div>
 
-      <Card className="shadow-md">
-        <CardHeader>
-          <CardTitle>Time Entry History</CardTitle>
+      <Card className="shadow-md gap-2">
+        <CardHeader className="gap-0">
+          <CardTitle className="flex items-center gap-2"><History className="w-4 h-4" />Time Entry History</CardTitle>
+          <CardDescription>View your time entry history here.</CardDescription>
         </CardHeader>
         <CardContent>
           {loading && (
@@ -295,28 +299,19 @@ export default function Home() {
           ) : (
             <div className="space-y-4">
               {entryContext!.timeEntries.map((entryValue, index) => {
-                const morningHours = calculateEntryHours(
-                  entryValue.morning_time_in,
-                  entryValue.morning_time_out
+                const totalInputHours = calculateEntryHours(
+                  entryValue.time_in,
+                  entryValue.time_out,
+                  entryValue.break_time
                 );
-                const afternoonHours = calculateEntryHours(
-                  entryValue.afternoon_time_in,
-                  entryValue.afternoon_time_out
-                );
-                const eveningHours = calculateEntryHours(
-                  entryValue.evening_time_in,
-                  entryValue.evening_time_out
-                );
-                const totalHours = morningHours + afternoonHours + eveningHours;
+                const totalHours = totalInputHours;
 
                 return (
                   <EntriesCard
                     key={entryValue.id}
                     index={index}
                     entry={entryValue}
-                    morningHours={morningHours}
-                    afternoonHours={afternoonHours}
-                    eveningHours={eveningHours}
+                    totalInputHours={totalInputHours}
                     totalHours={totalHours}
                   />
                 );
@@ -326,17 +321,32 @@ export default function Home() {
         </CardContent>
       </Card>
       <footer className="p-3 mt-10 text-center">
-        <p className="text-sm">
-          Built with NextJS + TailwindCSS by{" "}
-          <span>
-            <a
-              className="underline hover:text-primary"
-              href="https://aybangueco.vercel.app/"
-            >
-              aybangueco
-            </a>
-          </span>
-        </p>
+        <div className="flex items-center justify-center gap-1">
+          <p className="text-sm">
+            Redesigned by{" "}
+            <span>
+              <a
+                className="hover:underline text-primary"
+                href="https://johnallen.is-a.dev/"
+                target="_blank"
+              >
+                dazedmind
+              </a>
+            </span>
+            
+          </p>
+          <p className="text-sm">
+            Built by{" "}
+            <span>
+              <a
+                className="hover:underline text-primary"
+                href="https://aybangueco.vercel.app/"
+              >
+                aybangueco
+              </a>
+            </span>
+          </p>
+        </div>
       </footer>
     </div>
   );

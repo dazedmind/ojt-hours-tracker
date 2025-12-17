@@ -6,12 +6,9 @@ export default function useEntryForm() {
 
   const [entryValue, setEntryValue] = useState<NewTimeEntry>({
     date: "",
-    morning_time_in: "",
-    morning_time_out: "",
-    afternoon_time_in: "",
-    afternoon_time_out: "",
-    evening_time_in: "",
-    evening_time_out: "",
+    time_in: "",
+    time_out: "",
+    break_time: "",
   });
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
