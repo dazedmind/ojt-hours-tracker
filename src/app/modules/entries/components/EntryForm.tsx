@@ -83,10 +83,10 @@ export default function EntryForm({
                 <Input
                   type="time"
                   name="time_in"
-                  placeholder="Time In"
+                  placeholder="Enter time in"
                   value={data.time_in}
                   onChange={handleInputChange}
-                  className="text-base"
+                  className="w-fit text-base"
                 />
                 <span className="text-xs text-gray-500">Time In</span>
               </div>
@@ -94,10 +94,10 @@ export default function EntryForm({
                 <Input
                   type="time"
                   name="time_out"
-                  placeholder="Time Out"
+                  placeholder="Enter time out"
                   value={data.time_out}
                   onChange={handleInputChange}
-                  className="text-base"
+                  className="w-fit text-base"
                 />
                 <span className="text-xs text-gray-500">Time Out</span>
               </div>
