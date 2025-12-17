@@ -12,7 +12,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { AlertCircle, FlagTriangleLeft, History, Hourglass, Plus } from "lucide-react";
+import { AlertCircle, FlagTriangleLeft, History, Hourglass } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ThemeSwitcher } from "@/components/theme-switcher";
@@ -37,7 +37,6 @@ import {
   EntryForm,
 } from "@/modules/entries";
 import { useTheme } from "next-themes";
-import { Separator } from "@/components/ui/separator";
 
 export default function Home() {
   const {

@@ -20,7 +20,7 @@ import useAuthUser from "@/hooks/useAuthUser";
 import useEntryForm from "@/hooks/useEntryForm";
 import EntryForm from "./EntryForm";
 import { actionDeleteEntry, actionUpdateEntry } from "../";
-import { Pencil, SquarePen, Trash2 } from "lucide-react";
+import { SquarePen, Trash2 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 
 const timeFormat = (time: string) => {
@@ -40,7 +40,6 @@ const timeFormat = (time: string) => {
 export default function EntriesCard({
   index,
   entry,
-  totalInputHours,
   totalHours,
 }: {
   index: number;
