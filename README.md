@@ -52,6 +52,10 @@ DATABASE_URL="postgresql://user:password@host:port/database"
 # Supabase
 NEXT_PUBLIC_SUPABASE_URL="https://your-project.supabase.co"
 NEXT_PUBLIC_SUPABASE_ANON_KEY="your-anon-key"
+
+# Optional: Site URL for OAuth (auto-detected if not set)
+NEXT_PUBLIC_BASE_URL="http://localhost:3000"  # For local development
+# NEXT_PUBLIC_BASE_URL="https://your-app.vercel.app"  # For production
 ```
 
 ### Getting Your Environment Variables:
@@ -68,7 +72,14 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY="your-anon-key"
 1. In Supabase Dashboard, go to **Authentication** → **Providers**
 2. Enable **Google** provider
 3. Follow Supabase's guide to set up Google OAuth credentials
-4. Add your redirect URLs in Google Cloud Console
+4. Configure **URL Configuration** in Supabase:
+   - Go to **Authentication** → **URL Configuration**
+   - Set **Site URL** to your production URL (e.g., `https://your-app.vercel.app`)
+   - Add **Redirect URLs**:
+     - `http://localhost:3000/auth/callback` (local)
+     - `https://your-app.vercel.app/auth/callback` (production)
+5. In Google Cloud Console, add authorized redirect URIs:
+   - `https://your-project.supabase.co/auth/v1/callback`
 
 ## 📦 Installation
 
@@ -203,6 +214,46 @@ npx prisma studio    # Open Prisma Studio (database GUI)
 
 # Linting
 npm run lint         # Run ESLint
+```
+
+## 🐛 Troubleshooting
+
+### OAuth Redirecting to Localhost in Production
+
+**Problem**: After Google sign-in on Vercel, you're redirected to `http://localhost:3000`
+
+**Solution**:
+1. **Update Supabase URL Configuration**:
+   - Go to Supabase Dashboard → **Authentication** → **URL Configuration**
+   - Set **Site URL** to: `https://your-app.vercel.app`
+   - Add your production URL to **Redirect URLs**: `https://your-app.vercel.app/auth/callback`
+
+2. **Redeploy on Vercel**:
+   - The code now auto-detects the correct URL
+   - Simply redeploy your Vercel app (it will rebuild automatically)
+
+3. **Optional - Set Environment Variable**:
+   ```env
+   NEXT_PUBLIC_BASE_URL="https://your-app.vercel.app"
+   ```
+
+### Database Connection Issues
+
+**Problem**: `P1001: Can't reach database server`
+
+**Solution**:
+- Check that your `DATABASE_URL` is correct in Vercel environment variables
+- Ensure your IP is whitelisted in Supabase (or enable connection pooling)
+- Verify you're using the **Session mode** connection string
+
+### Prisma Generate Errors
+
+**Problem**: `Cannot find module '@prisma/client'`
+
+**Solution**:
+```bash
+npx prisma generate
+npm install
 ```
 
 ## 🤝 Contributing

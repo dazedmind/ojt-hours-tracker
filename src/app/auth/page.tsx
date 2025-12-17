@@ -32,10 +32,14 @@ export default function AuthPage() {
   const handleGoogleLogin = async () => {
     setIsLoading(true);
     try {
+      const redirectUrl = typeof window !== 'undefined' 
+        ? `${window.location.origin}/auth/callback`
+        : `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/auth/callback`;
+
       await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
-          redirectTo: `${process.env.NEXT_PUBLIC_BASE_URL}/auth/callback`,
+          redirectTo: redirectUrl,
         },
       });
     } catch (error) {
