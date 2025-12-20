@@ -27,6 +27,8 @@ const timeFormat = (time: string) => {
   if (!time) return "";
   
   const [hours, minutes] = time.split(":");
+  if (!hours || !minutes) return time; // Return original if format is unexpected
+  
   const hour = parseInt(hours, 10);
   const minute = minutes.padStart(2, "0");
   
@@ -143,6 +145,11 @@ export default function EntriesCard({
               <div className="text-muted-foreground">
                 <span>Hours Rendered:</span>{" "}
                 {timeFormat(entry.time_in)} - {timeFormat(entry.time_out)}       
+              </div>
+            )}
+            {entry.break_time && (
+              <div className="text-muted-foreground">
+                <span>Break Time:</span> {timeFormat(entry.break_time)} minutes
               </div>
             )}
           </div>

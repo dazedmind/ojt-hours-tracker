@@ -42,14 +42,21 @@ export default function Home() {
   const [requiredHours, setRequiredHours] = useState<number>(0);
   const [completedHours, setCompletedHours] = useState<number>(0);
   const [loading, setLoading] = useState<boolean>(true);
+  const [mounted, setMounted] = useState<boolean>(false);
 
   const { user, userLoading } = useAuthUser();
   const { theme } = useTheme();
 
-  const completionPercentage: number = Math.min(
-    Math.round((completedHours / requiredHours) * 100),
-    100
-  );
+  const completionPercentage: number = requiredHours === 0 
+    ? 0 
+    : Math.min(
+        Math.round((completedHours / requiredHours) * 100),
+        100
+      );
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     if (!localStorage.getItem("hours")) {
@@ -173,8 +180,8 @@ export default function Home() {
                 className="w-full h-full rounded-full"
                 style={{
                   background: `conic-gradient(
-                    ${theme === "dark" ? "#00472E" : "#00FF66"} ${completionPercentage}%,
-                    ${theme === "dark" ? "#232323" : "#e9e9e9"} ${completionPercentage}%
+                    ${mounted && theme === "dark" ? "#00472E" : "#00FF66"} ${completionPercentage}%,
+                    ${mounted && theme === "dark" ? "#232323" : "#e9e9e9"} ${completionPercentage}%
                   )`,
                 }}
               >

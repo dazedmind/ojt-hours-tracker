@@ -58,6 +58,8 @@ export default function EntryForm({
                   mode="single"
                   selected={date}
                   captionLayout="dropdown"
+                  fromYear={new Date().getFullYear()}
+                  toYear={new Date().getFullYear() + 1}
                   onSelect={(date) => {
                     setDate(date)
                     handleInputChange({
