@@ -11,7 +11,14 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { AlertCircle, FlagTriangleLeft, History, Hourglass } from "lucide-react";
+import {
+  AlertCircle,
+  FlagTriangleLeft,
+  History,
+  Hourglass,
+  Square,
+  SquareActivity,
+} from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import useAuthUser from "@/hooks/useAuthUser";
@@ -47,12 +54,10 @@ export default function Home() {
   const { user, userLoading } = useAuthUser();
   const { theme } = useTheme();
 
-  const completionPercentage: number = requiredHours === 0 
-    ? 0 
-    : Math.min(
-        Math.round((completedHours / requiredHours) * 100),
-        100
-      );
+  const completionPercentage: number =
+    requiredHours === 0
+      ? 0
+      : Math.min(Math.round((completedHours / requiredHours) * 100), 100);
 
   useEffect(() => {
     setMounted(true);
@@ -119,7 +124,7 @@ export default function Home() {
     setRequiredHours(value);
   };
 
-  const handleAddEntry = async () => {    
+  const handleAddEntry = async () => {
     if (!entryValue.date) {
       alert("Please select a date");
       return;
@@ -171,7 +176,10 @@ export default function Home() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
         <Card className="shadow-md">
           <CardHeader className="gap-0">
-            <CardTitle className="flex items-center gap-2"><FlagTriangleLeft className="w-4 h-4" />OJT Progress</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <FlagTriangleLeft className="w-4 h-4" />
+              OJT Progress
+            </CardTitle>
             <CardDescription>View your OJT progress here.</CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col items-center justify-center">
@@ -180,8 +188,12 @@ export default function Home() {
                 className="w-full h-full rounded-full"
                 style={{
                   background: `conic-gradient(
-                    ${mounted && theme === "dark" ? "#00472E" : "#00FF66"} ${completionPercentage}%,
-                    ${mounted && theme === "dark" ? "#232323" : "#e9e9e9"} ${completionPercentage}%
+                    ${
+                      mounted && theme === "dark" ? "#00472E" : "#00FF66"
+                    } ${completionPercentage}%,
+                    ${
+                      mounted && theme === "dark" ? "#232323" : "#e9e9e9"
+                    } ${completionPercentage}%
                   )`,
                 }}
               >
@@ -217,16 +229,18 @@ export default function Home() {
                   className="mt-1 w-24"
                 />
               </span>
-            
             </div>
           </CardFooter>
         </Card>
 
         <Card className="shadow-md">
           <CardHeader className="gap-0">
-            <CardTitle className="flex items-center gap-2"><Hourglass className="w-4 h-4" />Record Time Entry</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <Hourglass className="w-4 h-4" />
+              Record Time Entry
+            </CardTitle>
             <CardDescription>Record your time entry here.</CardDescription>
-            <Separator className="my-2"/>
+            <Separator className="my-2" />
           </CardHeader>
           <div className="px-6">
             <EntryForm
@@ -236,52 +250,119 @@ export default function Home() {
               isUpdate={false}
               handleAddEntry={handleAddEntry}
             />
-            </div>
+          </div>
         </Card>
       </div>
 
-      <Card className="shadow-md gap-2">
-        <CardHeader className="gap-0">
-          <CardTitle className="flex items-center gap-2"><History className="w-4 h-4" />Time Entry History</CardTitle>
-          <CardDescription>View your time entry history here.</CardDescription>
-          <Separator className="my-2"/>
-        </CardHeader>
-        <CardContent>
-          {loading && (
-            <div className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" />
-          )}
-          {entryContext!.timeEntries.length === 0 && !loading ? (
-            <Alert>
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>
-                No time entries yet. Add your first entryValue using the form
-                above.
-              </AlertDescription>
-            </Alert>
-          ) : (
-            <div className="space-y-4">
-              {entryContext!.timeEntries.map((entryValue, index) => {
-                const totalInputHours = calculateEntryHours(
-                  entryValue.time_in,
-                  entryValue.time_out,
-                  entryValue.break_time
-                );
-                const totalHours = totalInputHours;
-
-                return (
-                  <EntriesCard
-                    key={entryValue.id}
-                    index={index}
-                    entry={entryValue}
-                    totalInputHours={totalInputHours}
-                    totalHours={totalHours}
-                  />
-                );
-              })}
+      <div className="grid grid-cols-1 gap-6 mb-8">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <SquareActivity className="w-4 h-4" /> Block View
+            </CardTitle>
+            <CardDescription>
+              View your time entry history in a block view.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-col gap-3">
+              <div className="text-sm text-muted-foreground">
+                <span className="font-medium">Total Days:</span>{" "}
+                {Math.round(requiredHours / 8)} days
+              </div>
+              <div className="flex flex-wrap items-center gap-1">
+                {Array.from({ length: Math.round(requiredHours / 8) }).map(
+                  (_, index) => {
+                    const isCompleted = index < Math.round(completedHours / 8);
+                    return (
+                      <div
+                        key={index}
+                        className={`w-4 h-4 rounded transition-colors ${
+                          isCompleted
+                            ? mounted && theme === "dark"
+                              ? "bg-[#00472E]"
+                              : "bg-[#00FF66]"
+                            : "bg-accent"
+                        }`}
+                        title={`Day ${index + 1}${
+                          isCompleted ? " - Completed" : " - Pending"
+                        }`}
+                      />
+                    );
+                  }
+                )}
+              </div>
+              <div className="text-xs text-muted-foreground">
+                <span className="inline-flex items-center gap-1">
+                  <div
+                    className={`w-3 h-3 rounded ${
+                      mounted && theme === "dark"
+                        ? "bg-[#00472E]"
+                        : "bg-[#00FF66]"
+                    }`}
+                  ></div>
+                  Completed ({Math.round(completedHours / 8)} days)
+                </span>
+                <span className="inline-flex items-center gap-1 ml-3">
+                  <div className="w-3 h-3 rounded bg-accent"></div>
+                  Remaining (
+                  {Math.round(requiredHours / 8) -
+                    Math.round(completedHours / 8)}{" "}
+                  days)
+                </span>
+              </div>
             </div>
-          )}
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+
+        <Card className="shadow-md gap-2">
+          <CardHeader className="gap-0">
+            <CardTitle className="flex items-center gap-2">
+              <History className="w-4 h-4" />
+              Time Entry History
+            </CardTitle>
+            <CardDescription>
+              View your time entry history here.
+            </CardDescription>
+            <Separator className="my-2" />
+          </CardHeader>
+          <CardContent>
+            {loading && (
+              <div className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" />
+            )}
+            {entryContext!.timeEntries.length === 0 && !loading ? (
+              <Alert>
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
+                  No time entries yet. Add your first entryValue using the form
+                  above.
+                </AlertDescription>
+              </Alert>
+            ) : (
+              <div className="space-y-4">
+                {entryContext!.timeEntries.map((entryValue, index) => {
+                  const totalInputHours = calculateEntryHours(
+                    entryValue.time_in,
+                    entryValue.time_out,
+                    entryValue.break_time
+                  );
+                  const totalHours = totalInputHours;
+
+                  return (
+                    <EntriesCard
+                      key={entryValue.id}
+                      index={index}
+                      entry={entryValue}
+                      totalInputHours={totalInputHours}
+                      totalHours={totalHours}
+                    />
+                  );
+                })}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
       <footer className="p-3 mt-10 text-center">
         <div className="flex items-center justify-center gap-1">
           <p className="text-sm">
@@ -295,7 +376,6 @@ export default function Home() {
                 dazedmind
               </a>
             </span>
-            
           </p>
           <p className="text-sm">
             Built by{" "}
