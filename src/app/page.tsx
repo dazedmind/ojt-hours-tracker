@@ -16,7 +16,6 @@ import {
   FlagTriangleLeft,
   History,
   Hourglass,
-  Square,
   SquareActivity,
 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
