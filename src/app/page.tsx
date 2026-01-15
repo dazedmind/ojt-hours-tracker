@@ -14,6 +14,8 @@ import { Label } from "@/components/ui/label";
 import {
   AlertCircle,
   Check,
+  ChevronLeft,
+  ChevronRight,
   FlagTriangleLeft,
   History,
   Hourglass,
@@ -55,6 +57,8 @@ export default function Home() {
   const [mounted, setMounted] = useState<boolean>(false);
   const [isEditing, setIsEditing] = useState<boolean>(false);
   const [isGeneratingImage, setIsGeneratingImage] = useState<boolean>(false);
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const entriesPerPage = 5;
   const { user, userLoading } = useAuthUser();
   const { theme } = useTheme();
   const blockViewRef = useRef<HTMLDivElement>(null);
@@ -73,20 +77,12 @@ export default function Home() {
       }
       const hours = Number(localStorage.getItem("hours")) || 0;
       setRequiredHours(hours);
-      console.log("Component mounted. Required hours from localStorage:", hours);
     }
   }, []);
 
   useEffect(() => {
     async function fetchEntries() {
-      console.log("Fetch entries called", { 
-        hasUser: !!user?.id, 
-        userLoading, 
-        hasContext: !!entryContext 
-      });
-
       if (userLoading) {
-        console.log("User still loading, waiting...");
         return;
       }
 
@@ -136,7 +132,8 @@ export default function Home() {
     }
 
     fetchEntries();
-  }, [user?.id, userLoading, entryContext]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id, userLoading]);
 
   useEffect(() => {
     if (!entryContext?.timeEntries) {
@@ -147,8 +144,6 @@ export default function Home() {
 
     let totalHours = 0;
 
-    console.log("Calculating hours for entries:", entryContext.timeEntries);
-
     entryContext.timeEntries.forEach((entryValue) => {
       const totalInputHours = calculateEntryHours(
         entryValue.time_in,
@@ -156,20 +151,14 @@ export default function Home() {
         entryValue.break_time
       );
 
-      console.log("Entry hours:", {
-        date: entryValue.date,
-        time_in: entryValue.time_in,
-        time_out: entryValue.time_out,
-        break_time: entryValue.break_time,
-        calculated: totalInputHours
-      });
-
       totalHours += totalInputHours;
     });
 
     const completed = parseFloat(totalHours.toFixed(2));
     setCompletedHours(completed);
-    console.log("Total completed hours:", completed, "from", entryContext.timeEntries.length, "entries");
+
+    // Reset to first page when entries change
+    setCurrentPage(1);
   }, [entryContext?.timeEntries]);
 
   const handleRequiredHoursChange = (
@@ -426,8 +415,8 @@ export default function Home() {
                 <div className="mt-4 w-full">
                   <Progress value={completionPercentage} className="h-2" />
                   <div className="flex justify-between text-sm mt-2">
-                    <span>{completedHours} hours completed</span>
-                    <span>{requiredHours} hours required</span>
+                    <span>{completedHours || 0} hours completed</span>
+                    <span>{requiredHours || 0} hours required</span>
                   </div>
                 </div>
               </>
@@ -435,32 +424,34 @@ export default function Home() {
               <div className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
             )}
           </CardContent>
-          <CardFooter>
-            <div className="w-full space-y-2">
-              <p className="text-sm">
-                Remaining Hours: {requiredHours - completedHours}
-              </p>
-              <span className="flex items-center justify-between gap-2">
-                <Label htmlFor="requiredHours">Total Required Hours:</Label>
-                <span className="flex items-center gap-2">
-                  <Input
-                    id="requiredHours"
-                    type="text"
-                    value={requiredHours}
-                    onChange={handleRequiredHoursChange}
-                    className="mt-1 w-14 text-center"
-                    disabled={!isEditing}
-                  />
-                  {!isEditing && (
-                    <button className="text-sm text-primary cursor-pointer" onClick={() => setIsEditing(true)}> <Pencil className="w-4 h-4" /> </button>
-                  )}
-                  {isEditing && (
-                    <button className="text-sm text-primary cursor-pointer" onClick={() => setIsEditing(false)}> <Check className="w-4 h-4" /> </button>
-                  )}
+          {mounted && (
+            <CardFooter>
+              <div className="w-full space-y-2">
+                <p className="text-sm">
+                  Remaining Hours: {Math.max(0, (requiredHours || 0) - (completedHours || 0))}
+                </p>
+                <span className="flex items-center justify-between gap-2">
+                  <Label htmlFor="requiredHours">Total Required Hours:</Label>
+                  <span className="flex items-center gap-2">
+                    <Input
+                      id="requiredHours"
+                      type="text"
+                      value={requiredHours || 0}
+                      onChange={handleRequiredHoursChange}
+                      className="mt-1 w-14 text-center"
+                      disabled={!isEditing}
+                    />
+                    {!isEditing && (
+                      <button className="text-sm text-primary cursor-pointer" onClick={() => setIsEditing(true)}> <Pencil className="w-4 h-4" /> </button>
+                    )}
+                    {isEditing && (
+                      <button className="text-sm text-primary cursor-pointer" onClick={() => setIsEditing(false)}> <Check className="w-4 h-4" /> </button>
+                    )}
+                  </span>
                 </span>
-              </span>
-            </div>
-          </CardFooter>
+              </div>
+            </CardFooter>
+          )}
         </Card>
 
         <Card className="shadow-md">
@@ -484,7 +475,7 @@ export default function Home() {
         </Card>
       </div>
 
-      <div className="grid grid-cols-1 gap-6 mb-8">
+      <div className="grid grid-cols-1 gap-6">
         <Card ref={blockViewRef} data-card-ref="block-view">
           <CardHeader ref={headerRef} className="flex flex-row items-center justify-between">
             <span>
@@ -492,7 +483,7 @@ export default function Home() {
                 <SquareActivity className="w-4 h-4" /> Block View
               </CardTitle>
               <CardDescription>
-                View your time entry history in a block view.
+                View time entry history in blocks.
               </CardDescription>
             </span>
             <button 
@@ -508,28 +499,32 @@ export default function Home() {
               <div className="flex flex-col gap-3">
                 <div className="text-sm text-muted-foreground">
                   <span className="font-medium">Total Days:</span>{" "}
-                  {Math.round(requiredHours / 8)} days
+                  {Math.round((requiredHours || 0) / 8)} days
                 </div>
                 <div className="flex flex-wrap items-center gap-1">
-                  {Array.from({ length: Math.round(requiredHours / 8) }).map(
-                    (_, index) => {
-                      const isCompleted = index < Math.round(completedHours / 8);
-                      return (
-                        <div
-                          key={index}
-                          className={`w-4 h-4 rounded transition-colors ${
-                            isCompleted
-                              ? theme === "dark"
-                                ? "bg-[#00472E]"
-                                : "bg-[#00FF66]"
-                              : "bg-accent"
-                          }`}
-                          title={`Day ${index + 1}${
-                            isCompleted ? " - Completed" : " - Pending"
-                          }`}
-                        />
-                      );
-                    }
+                  {Math.round((requiredHours || 0) / 8) > 0 ? (
+                    Array.from({ length: Math.round((requiredHours || 0) / 8) }).map(
+                      (_, index) => {
+                        const isCompleted = index < Math.round((completedHours || 0) / 8);
+                        return (
+                          <div
+                            key={index}
+                            className={`w-4 h-4 rounded transition-colors ${
+                              isCompleted
+                                ? theme === "dark"
+                                  ? "bg-[#00472E]"
+                                  : "bg-[#00FF66]"
+                                : "bg-accent"
+                            }`}
+                            title={`Day ${index + 1}${
+                              isCompleted ? " - Completed" : " - Pending"
+                            }`}
+                          />
+                        );
+                      }
+                    )
+                  ) : (
+                    <p className="text-sm text-muted-foreground">Set required hours to see progress blocks</p>
                   )}
                 </div>
                 <div className="text-xs text-muted-foreground">
@@ -541,13 +536,13 @@ export default function Home() {
                           : "bg-[#00FF66]"
                       }`}
                     ></div>
-                    Completed ({Math.round(completedHours / 8)} days)
+                    Completed ({Math.round((completedHours || 0) / 8)} days)
                   </span>
                   <span className="inline-flex items-center gap-1 ml-3">
                     <div className="w-3 h-3 rounded bg-accent"></div>
                     Remaining (
-                    {Math.round(requiredHours / 8) -
-                      Math.round(completedHours / 8)}{" "}
+                    {Math.max(0, Math.round((requiredHours || 0) / 8) -
+                      Math.round((completedHours || 0) / 8))}{" "}
                     days)
                   </span>
                 </div>
@@ -584,36 +579,127 @@ export default function Home() {
                 </AlertDescription>
               </Alert>
             ) : (
-              !loading && entryContext && (
-                <div className="space-y-4">
-                  {entryContext.timeEntries.map((entryValue, index) => {
-                    const totalInputHours = calculateEntryHours(
-                      entryValue.time_in,
-                      entryValue.time_out,
-                      entryValue.break_time
-                    );
-                    const totalHours = totalInputHours;
+              !loading && entryContext && (() => {
+                // Sort entries by ID descending (most recent first)
+                const sortedEntries = [...entryContext.timeEntries].sort((a, b) => b.id - a.id);
+                
+                // Calculate pagination
+                const totalEntries = sortedEntries.length;
+                const totalPages = Math.ceil(totalEntries / entriesPerPage);
+                const startIndex = (currentPage - 1) * entriesPerPage;
+                const endIndex = startIndex + entriesPerPage;
+                const currentEntries = sortedEntries.slice(startIndex, endIndex);
 
-                    return (
-                      <EntriesCard
-                        key={entryValue.id}
-                        index={index}
-                        entry={entryValue}
-                        totalInputHours={totalInputHours}
-                        totalHours={totalHours}
-                      />
-                    );
-                  })}
-                </div>
-              )
+                return (
+                  <div className="space-y-4">
+                    <div className="space-y-4">
+                      {currentEntries.map((entryValue, index) => {
+                        const totalInputHours = calculateEntryHours(
+                          entryValue.time_in,
+                          entryValue.time_out,
+                          entryValue.break_time
+                        );
+                        const totalHours = totalInputHours;
+
+                        return (
+                          <EntriesCard
+                            key={entryValue.id}
+                            index={startIndex + index}
+                            entry={entryValue}
+                            totalInputHours={totalInputHours}
+                            totalHours={totalHours}
+                          />
+                        );
+                      })}
+                    </div>
+
+                    {/* Pagination Controls */}
+                    {totalPages > 1 && (
+                      <div className="flex flex-col sm:flex-row items-center justify-end gap-3 pt-4">
+                        {/* <div className="text-sm text-muted-foreground">
+                          Showing {startIndex + 1}-{Math.min(endIndex, totalEntries)} of {totalEntries} entries
+                        </div> */}
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                            disabled={currentPage === 1}
+                            className="p-2 rounded-md border hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                            aria-label="Previous page"
+                          >
+                            <ChevronLeft className="w-4 h-4" />
+                          </button>
+                          
+                          <div className="flex items-center gap-1">
+                            {(() => {
+                              const pages = [];
+                              const maxVisible = 5;
+                              
+                              if (totalPages <= maxVisible) {
+                                // Show all pages if total is small
+                                for (let i = 1; i <= totalPages; i++) {
+                                  pages.push(i);
+                                }
+                              } else {
+                                // Show smart pagination with ellipsis
+                                if (currentPage <= 3) {
+                                  // Near start
+                                  pages.push(1, 2, 3, 4, '...', totalPages);
+                                } else if (currentPage >= totalPages - 2) {
+                                  // Near end
+                                  pages.push(1, '...', totalPages - 3, totalPages - 2, totalPages - 1, totalPages);
+                                } else {
+                                  // In middle
+                                  pages.push(1, '...', currentPage - 1, currentPage, currentPage + 1, '...', totalPages);
+                                }
+                              }
+
+                              return pages.map((page, idx) => {
+                                if (page === '...') {
+                                  return (
+                                    <span key={`ellipsis-${idx}`} className="px-2 text-muted-foreground">
+                                      ...
+                                    </span>
+                                  );
+                                }
+                                return (
+                                  <button
+                                    key={page}
+                                    onClick={() => setCurrentPage(page as number)}
+                                    className={`min-w-8 px-3 py-1 rounded-md text-sm transition-colors ${
+                                      currentPage === page
+                                        ? 'bg-primary text-primary-foreground'
+                                        : 'hover:bg-accent'
+                                    }`}
+                                  >
+                                    {page}
+                                  </button>
+                                );
+                              });
+                            })()}
+                          </div>
+
+                          <button
+                            onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                            disabled={currentPage === totalPages}
+                            className="p-2 rounded-md border hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                            aria-label="Next page"
+                          >
+                            <ChevronRight className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()
             )}
           </CardContent>
         </Card>
       </div>
-      <footer className="p-3 mt-10 text-center">
+      <footer className="p-3 py-6 mt-2 text-center">
         <div className="flex items-center justify-center gap-1">
           <p className="text-sm">
-            Redesigned by{" "}
+            Designed by{" "}
             <span>
               <a
                 className="hover:underline text-primary"
@@ -621,17 +707,6 @@ export default function Home() {
                 target="_blank"
               >
                 dazedmind
-              </a>
-            </span>
-          </p>
-          <p className="text-sm">
-            Built by{" "}
-            <span>
-              <a
-                className="hover:underline text-primary"
-                href="https://aybangueco.vercel.app/"
-              >
-                aybangueco
               </a>
             </span>
           </p>

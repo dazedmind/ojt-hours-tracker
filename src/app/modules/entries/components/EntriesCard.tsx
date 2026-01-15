@@ -143,7 +143,7 @@ export default function EntriesCard({
           <div className="text-sm">
             {entry.time_in && (
               <div className="text-muted-foreground">
-                <span>Hours Rendered:</span>{" "}
+                <span>Time Rendered:</span>{" "}
                 {timeFormat(entry.time_in)} - {timeFormat(entry.time_out)}       
               </div>
             )}

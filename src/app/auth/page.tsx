@@ -52,11 +52,13 @@ export default function AuthPage() {
     <div className="min-h-screen flex items-center justify-center p-4">
       <Card className="w-full max-w-md shadow-lg">
         <CardHeader className="space-y-1 text-center">
-          <div className="flex justify-center mb-6 text-3xl font-bold">
-            <p>OJT Hours Tracker</p>
+          <div className="flex flex-col items-center justify-center mb-6">
+            <img src="/lockin-logo.png" alt="LockIn Logo" className="w-20 h-20" />
+            <p className="text-3xl font-bold">LockIn</p>
+            <p className="text-md text-muted-foreground">Log your OJT Hours and track your progress</p>
           </div>
           <CardDescription>
-            Sign in to your google account to continue
+            Sign in with your google account to continue
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
