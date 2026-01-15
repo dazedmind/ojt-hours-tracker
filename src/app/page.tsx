@@ -71,17 +71,29 @@ export default function Home() {
       if (!localStorage.getItem("hours")) {
         localStorage.setItem("hours", "0");
       }
-      setRequiredHours(Number(localStorage.getItem("hours")) || 0);
+      const hours = Number(localStorage.getItem("hours")) || 0;
+      setRequiredHours(hours);
+      console.log("Component mounted. Required hours from localStorage:", hours);
     }
   }, []);
 
   useEffect(() => {
     async function fetchEntries() {
+      console.log("Fetch entries called", { 
+        hasUser: !!user?.id, 
+        userLoading, 
+        hasContext: !!entryContext 
+      });
+
       if (!user?.id || userLoading || !entryContext) {
+        console.log("Skipping fetch - conditions not met");
         return;
       }
 
+      console.log("Fetching entries for user:", user.id);
       const { ok, data } = await actionGetEntries(user.id);
+
+      console.log("Fetch result:", { ok, dataLength: data?.length });
 
       if (!ok) {
         toast.error("Error fetching entries");
@@ -101,13 +113,17 @@ export default function Home() {
           ...entry,
         }))
       );
+      console.log("Entries set successfully:", data.length);
     }
 
     fetchEntries();
   }, [user?.id, userLoading]);
 
   useEffect(() => {
-    if (!entryContext?.timeEntries) return;
+    if (!entryContext?.timeEntries) {
+      console.log("No entries to calculate");
+      return;
+    }
 
     let totalHours = 0;
 
@@ -125,7 +141,9 @@ export default function Home() {
       localStorage.setItem("entries", JSON.stringify(entryContext.timeEntries));
     }
 
-    setCompletedHours(parseFloat(totalHours.toFixed(2)));
+    const completed = parseFloat(totalHours.toFixed(2));
+    setCompletedHours(completed);
+    console.log("Completed hours calculated:", completed, "from", entryContext.timeEntries.length, "entries");
   }, [entryContext?.timeEntries]);
 
   const handleRequiredHoursChange = (
@@ -338,10 +356,6 @@ export default function Home() {
     }
   };
 
-  if (!mounted) {
-    return null;
-  }
-
   return (
     <div className="container mx-auto max-w-4xl px-4">
       <header>
@@ -358,36 +372,42 @@ export default function Home() {
             <CardDescription>View your OJT progress here.</CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col items-center justify-center">
-            <div className="relative w-40 h-40">
-              <div
-                className="w-full h-full rounded-full"
-                style={{
-                  background: `conic-gradient(
-                    ${
-                      theme === "dark" ? "#00472E" : "#00FF66"
-                    } ${completionPercentage}%,
-                    ${
-                      theme === "dark" ? "#232323" : "#e9e9e9"
-                    } ${completionPercentage}%
-                  )`,
-                }}
-              >
-                <div className="absolute top-4 left-4 right-4 bottom-4 bg-primary rounded-full flex items-center justify-center flex-col">
-                  <span className="text-4xl font-bold">
-                    {completionPercentage}%
-                  </span>
-                  <span className="text-sm">Complete</span>
+            {mounted ? (
+              <>
+                <div className="relative w-40 h-40">
+                  <div
+                    className="w-full h-full rounded-full"
+                    style={{
+                      background: `conic-gradient(
+                        ${
+                          theme === "dark" ? "#00472E" : "#00FF66"
+                        } ${completionPercentage}%,
+                        ${
+                          theme === "dark" ? "#232323" : "#e9e9e9"
+                        } ${completionPercentage}%
+                      )`,
+                    }}
+                  >
+                    <div className="absolute top-4 left-4 right-4 bottom-4 bg-primary rounded-full flex items-center justify-center flex-col">
+                      <span className="text-4xl font-bold">
+                        {completionPercentage}%
+                      </span>
+                      <span className="text-sm">Complete</span>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
 
-            <div className="mt-4 w-full">
-              <Progress value={completionPercentage} className="h-2" />
-              <div className="flex justify-between text-sm mt-2">
-                <span>{completedHours} hours completed</span>
-                <span>{requiredHours} hours required</span>
-              </div>
-            </div>
+                <div className="mt-4 w-full">
+                  <Progress value={completionPercentage} className="h-2" />
+                  <div className="flex justify-between text-sm mt-2">
+                    <span>{completedHours} hours completed</span>
+                    <span>{requiredHours} hours required</span>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+            )}
           </CardContent>
           <CardFooter>
             <div className="w-full space-y-2">
@@ -458,53 +478,59 @@ export default function Home() {
             </button>
           </CardHeader>
           <CardContent>
-            <div className="flex flex-col gap-3">
-              <div className="text-sm text-muted-foreground">
-                <span className="font-medium">Total Days:</span>{" "}
-                {Math.round(requiredHours / 8)} days
+            {mounted ? (
+              <div className="flex flex-col gap-3">
+                <div className="text-sm text-muted-foreground">
+                  <span className="font-medium">Total Days:</span>{" "}
+                  {Math.round(requiredHours / 8)} days
+                </div>
+                <div className="flex flex-wrap items-center gap-1">
+                  {Array.from({ length: Math.round(requiredHours / 8) }).map(
+                    (_, index) => {
+                      const isCompleted = index < Math.round(completedHours / 8);
+                      return (
+                        <div
+                          key={index}
+                          className={`w-4 h-4 rounded transition-colors ${
+                            isCompleted
+                              ? theme === "dark"
+                                ? "bg-[#00472E]"
+                                : "bg-[#00FF66]"
+                              : "bg-accent"
+                          }`}
+                          title={`Day ${index + 1}${
+                            isCompleted ? " - Completed" : " - Pending"
+                          }`}
+                        />
+                      );
+                    }
+                  )}
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  <span className="inline-flex items-center gap-1">
+                    <div
+                      className={`w-3 h-3 rounded ${
+                        theme === "dark"
+                          ? "bg-[#00472E]"
+                          : "bg-[#00FF66]"
+                      }`}
+                    ></div>
+                    Completed ({Math.round(completedHours / 8)} days)
+                  </span>
+                  <span className="inline-flex items-center gap-1 ml-3">
+                    <div className="w-3 h-3 rounded bg-accent"></div>
+                    Remaining (
+                    {Math.round(requiredHours / 8) -
+                      Math.round(completedHours / 8)}{" "}
+                    days)
+                  </span>
+                </div>
               </div>
-              <div className="flex flex-wrap items-center gap-1">
-                {Array.from({ length: Math.round(requiredHours / 8) }).map(
-                  (_, index) => {
-                    const isCompleted = index < Math.round(completedHours / 8);
-                    return (
-                      <div
-                        key={index}
-                        className={`w-4 h-4 rounded transition-colors ${
-                          isCompleted
-                            ? theme === "dark"
-                              ? "bg-[#00472E]"
-                              : "bg-[#00FF66]"
-                            : "bg-accent"
-                        }`}
-                        title={`Day ${index + 1}${
-                          isCompleted ? " - Completed" : " - Pending"
-                        }`}
-                      />
-                    );
-                  }
-                )}
+            ) : (
+              <div className="flex justify-center py-8">
+                <div className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
               </div>
-              <div className="text-xs text-muted-foreground">
-                <span className="inline-flex items-center gap-1">
-                  <div
-                    className={`w-3 h-3 rounded ${
-                      theme === "dark"
-                        ? "bg-[#00472E]"
-                        : "bg-[#00FF66]"
-                    }`}
-                  ></div>
-                  Completed ({Math.round(completedHours / 8)} days)
-                </span>
-                <span className="inline-flex items-center gap-1 ml-3">
-                  <div className="w-3 h-3 rounded bg-accent"></div>
-                  Remaining (
-                  {Math.round(requiredHours / 8) -
-                    Math.round(completedHours / 8)}{" "}
-                  days)
-                </span>
-              </div>
-            </div>
+            )}
           </CardContent>
         </Card>
 
