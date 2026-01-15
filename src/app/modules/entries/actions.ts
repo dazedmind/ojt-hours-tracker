@@ -8,11 +8,13 @@ export async function actionGetEntries(userID: string): Promise<{
   data: Entries[] | null;
 }> {
   try {
+    console.log("[Server] Fetching entries for user:", userID);
     const entries = await getEntriesByUser(userID);
+    console.log("[Server] Found entries:", entries.length);
 
     return { ok: true, data: entries };
   } catch (error) {
-    console.log(error);
+    console.error("[Server] Error fetching entries:", error);
     return { ok: false, data: null };
   }
 }

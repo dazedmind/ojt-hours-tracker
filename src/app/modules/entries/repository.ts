@@ -2,14 +2,24 @@ import { Entries } from "@/generated/client";
 import { prisma } from "@/utils/prisma";
 
 export async function getEntriesByUser(uuid: string): Promise<Entries[]> {
-  return await prisma.entries.findMany({
-    where: {
-      created_by: uuid,
-    },
-    orderBy: {
-      id: "asc",
-    },
-  });
+  console.log("[Repository] Fetching entries for user:", uuid);
+  
+  try {
+    const entries = await prisma.entries.findMany({
+      where: {
+        created_by: uuid,
+      },
+      orderBy: {
+        id: "asc",
+      },
+    });
+    
+    console.log("[Repository] Query successful, found:", entries.length, "entries");
+    return entries;
+  } catch (error) {
+    console.error("[Repository] Database query error:", error);
+    throw error;
+  }
 }
 
 export async function getEntriesByID(

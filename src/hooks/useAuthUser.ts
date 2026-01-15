@@ -10,22 +10,26 @@ export default function useAuthUser() {
 
   useEffect(() => {
     async function getAuthUser() {
+      console.log("Getting auth user...");
       const {
         data: { user },
         error,
       } = await supabase.auth.getUser();
 
       if (error) {
+        console.error("Auth error:", error);
         setError(error);
+        setUserLoading(false);
         return;
       }
 
+      console.log("User authenticated:", user?.id);
       setUser(user);
       setUserLoading(false);
     }
 
     getAuthUser();
-  }, []);
+  }, [supabase]);
 
   return { user, userLoading, error };
 }

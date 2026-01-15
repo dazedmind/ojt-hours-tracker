@@ -85,47 +85,69 @@ export default function Home() {
         hasContext: !!entryContext 
       });
 
-      if (!user?.id || userLoading || !entryContext) {
-        console.log("Skipping fetch - conditions not met");
+      if (userLoading) {
+        console.log("User still loading, waiting...");
+        return;
+      }
+
+      if (!user?.id) {
+        console.log("No user ID - user not authenticated");
+        setLoading(false);
+        return;
+      }
+
+      if (!entryContext) {
+        console.log("No entry context available");
+        setLoading(false);
         return;
       }
 
       console.log("Fetching entries for user:", user.id);
-      const { ok, data } = await actionGetEntries(user.id);
+      
+      try {
+        const { ok, data } = await actionGetEntries(user.id);
 
-      console.log("Fetch result:", { ok, dataLength: data?.length });
+        console.log("Fetch result:", { ok, dataLength: data?.length, data });
 
-      if (!ok) {
-        toast.error("Error fetching entries");
+        if (!ok) {
+          console.error("Failed to fetch entries");
+          toast.error("Error fetching entries");
+          setLoading(false);
+          return;
+        }
+
+        if (!data) {
+          console.warn("No data returned from fetch");
+          toast.error("No data returned");
+          setLoading(false);
+          entryContext.setTimeEntries([]);
+          return;
+        }
+
+        console.log("Setting entries:", data);
+        entryContext.setTimeEntries(data);
         setLoading(false);
-        return;
-      }
-
-      if (!data) {
-        toast.error("Error fetching entries");
+        console.log("Entries set successfully:", data.length);
+      } catch (error) {
+        console.error("Error in fetchEntries:", error);
+        toast.error("Failed to fetch entries");
         setLoading(false);
-        return;
       }
-
-      setLoading(false);
-      entryContext.setTimeEntries(
-        data.map((entry) => ({
-          ...entry,
-        }))
-      );
-      console.log("Entries set successfully:", data.length);
     }
 
     fetchEntries();
-  }, [user?.id, userLoading]);
+  }, [user?.id, userLoading, entryContext]);
 
   useEffect(() => {
     if (!entryContext?.timeEntries) {
       console.log("No entries to calculate");
+      setCompletedHours(0);
       return;
     }
 
     let totalHours = 0;
+
+    console.log("Calculating hours for entries:", entryContext.timeEntries);
 
     entryContext.timeEntries.forEach((entryValue) => {
       const totalInputHours = calculateEntryHours(
@@ -134,16 +156,20 @@ export default function Home() {
         entryValue.break_time
       );
 
+      console.log("Entry hours:", {
+        date: entryValue.date,
+        time_in: entryValue.time_in,
+        time_out: entryValue.time_out,
+        break_time: entryValue.break_time,
+        calculated: totalInputHours
+      });
+
       totalHours += totalInputHours;
     });
 
-    if (typeof window !== "undefined") {
-      localStorage.setItem("entries", JSON.stringify(entryContext.timeEntries));
-    }
-
     const completed = parseFloat(totalHours.toFixed(2));
     setCompletedHours(completed);
-    console.log("Completed hours calculated:", completed, "from", entryContext.timeEntries.length, "entries");
+    console.log("Total completed hours:", completed, "from", entryContext.timeEntries.length, "entries");
   }, [entryContext?.timeEntries]);
 
   const handleRequiredHoursChange = (
