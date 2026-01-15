@@ -27,7 +27,11 @@ function NavBar() {
   };
   return (
     <div className="flex justify-between items-center py-6">
-      <h1 className="text-3xl font-bold text-center">OJT Hours Tracker</h1>
+      <span className="flex items-center gap-2">
+        <Image width={100} height={100} src="/lockin-logo.png" alt="LockIn Logo" className="w-10 h-10" />
+        <h1 className="text-3xl font-bold text-center">LockIn</h1>
+      </span>
+ 
       <div className="flex gap-3 items-center justify-center">
         <ThemeSwitcher />
         {userLoading ? (

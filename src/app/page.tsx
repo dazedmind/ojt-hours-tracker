@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useContext } from "react";
+import React, { useState, useEffect, useContext, useRef } from "react";
 import {
   Card,
   CardContent,
@@ -13,9 +13,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   AlertCircle,
+  Check,
   FlagTriangleLeft,
   History,
   Hourglass,
+  Pencil,
+  Share,
   SquareActivity,
 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
@@ -34,6 +37,7 @@ import { useTheme } from "next-themes";
 import { Separator } from "@/components/ui/separator";
 import NavBar from "./modules/layout/NavBar";
 import toast from "react-hot-toast";
+import html2canvas from "html2canvas";
 
 export default function Home() {
   const {
@@ -49,10 +53,12 @@ export default function Home() {
   const [completedHours, setCompletedHours] = useState<number>(0);
   const [loading, setLoading] = useState<boolean>(true);
   const [mounted, setMounted] = useState<boolean>(false);
-
+  const [isEditing, setIsEditing] = useState<boolean>(false);
+  const [isGeneratingImage, setIsGeneratingImage] = useState<boolean>(false);
   const { user, userLoading } = useAuthUser();
   const { theme } = useTheme();
-
+  const blockViewRef = useRef<HTMLDivElement>(null);
+  const headerRef = useRef<HTMLDivElement>(null);
   const completionPercentage: number =
     requiredHours === 0
       ? 0
@@ -166,13 +172,158 @@ export default function Home() {
     });
   };
 
+  const handleShareBlockView = async () => {
+    if (!blockViewRef.current) {
+      toast.error("Block view not found");
+      return;
+    }
+
+    setIsGeneratingImage(true);
+    toast.loading("Generating story image...", { id: "generating" });
+
+    try {
+      // Hide the header temporarily
+      if (headerRef.current) {
+        headerRef.current.style.display = "none";
+      }
+
+      // Wait for DOM to update
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      // Capture the block view card
+      const canvas = await html2canvas(blockViewRef.current, {
+        backgroundColor: theme === "dark" ? "#121212" : "#ffffff",
+        scale: 2,
+        logging: false,
+        useCORS: true,
+      } as any);
+
+      // Show the header again
+      if (headerRef.current) {
+        headerRef.current.style.display = "flex";
+      }
+
+      // Create a 9:16 canvas (1080x1920 - Instagram/Facebook story size)
+      const storyCanvas = document.createElement("canvas");
+      const storyWidth = 1080;
+      const storyHeight = 1920;
+      storyCanvas.width = storyWidth;
+      storyCanvas.height = storyHeight;
+
+      const ctx = storyCanvas.getContext("2d");
+      if (!ctx) {
+        throw new Error("Could not get canvas context");
+      }
+
+      // Fill background
+      ctx.fillStyle = theme === "dark" ? "#121212" : "#ffffff";
+      ctx.fillRect(0, 0, storyWidth, storyHeight);
+
+      // Colors
+      const textColor = theme === "dark" ? "#fafafa" : "#0a0a0a";
+      const accentColor = theme === "dark" ? "#00bd7c" : "#00bd7c";
+
+      // Draw clock icon (circle with clock hands)
+      const iconSize = 80;
+      const iconX = storyWidth / 2;
+      const iconY = 350;
+      
+      // Draw circle
+      ctx.strokeStyle = accentColor;
+      ctx.lineWidth = 6;
+      ctx.beginPath();
+      ctx.arc(iconX, iconY, iconSize / 2, 0, 2 * Math.PI);
+      ctx.stroke();
+      
+      // Draw clock hands
+      ctx.strokeStyle = accentColor;
+      ctx.lineWidth = 4;
+      ctx.lineCap = "round";
+      // Hour hand
+      ctx.beginPath();
+      ctx.moveTo(iconX, iconY);
+      ctx.lineTo(iconX, iconY - 15);
+      ctx.stroke();
+      // Minute hand
+      ctx.beginPath();
+      ctx.moveTo(iconX, iconY);
+      ctx.lineTo(iconX + 20, iconY);
+      ctx.stroke();
+
+      // Draw hours text
+      ctx.font = "bold 72px sans-serif";
+      ctx.fillStyle = textColor;
+      ctx.textAlign = "center";
+      ctx.fillText(`${completedHours} Hours`, storyWidth / 2, 480);
+
+      // Draw days completed text
+      ctx.font = "36px sans-serif";
+      const completedDays = Math.round(completedHours / 8);
+      const totalDays = Math.round(requiredHours / 8);
+      ctx.fillStyle = accentColor;
+      // ctx.fillText(`${completedDays}`, storyWidth / 2, 460);
+      ctx.fillStyle = textColor;
+      ctx.textAlign = "center";
+      ctx.fillText(` ${completedDays} / ${totalDays} days completed`, storyWidth / 2, 560);
+
+      // Calculate block view card position
+      const cardPadding = 80;
+      const cardWidth = storyWidth - (cardPadding * 2);
+      const scaleFactor = cardWidth / canvas.width;
+      const scaledCardWidth = canvas.width * scaleFactor;
+      const scaledCardHeight = canvas.height * scaleFactor;
+      const cardX = (storyWidth - scaledCardWidth) / 2;
+      const cardY = 750;
+
+      // Draw the captured block view card
+      ctx.drawImage(canvas, cardX, cardY, scaledCardWidth, scaledCardHeight);
+
+      // Add branding text at the bottom
+      ctx.font = "bold 52px sans-serif";
+      ctx.fillStyle = textColor;
+      ctx.textAlign = "center";
+      ctx.fillText("LockIn", storyWidth / 2, storyHeight - 150);
+      
+      ctx.font = "32px sans-serif";
+      ctx.fillStyle = textColor;
+      ctx.fillText("lockin-tracker.vercel.app", storyWidth / 2, storyHeight - 100);
+
+      // Convert to blob and download
+      storyCanvas.toBlob((blob) => {
+        if (!blob) {
+          toast.error("Failed to generate image", { id: "generating" });
+          setIsGeneratingImage(false);
+          return;
+        }
+
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.download = `lockin-progress-${new Date().getTime()}.png`;
+        link.href = url;
+        link.click();
+        URL.revokeObjectURL(url);
+
+        toast.success("Story image downloaded!", { id: "generating" });
+        setIsGeneratingImage(false);
+      }, "image/png");
+    } catch (error) {
+      console.error("Error generating image:", error);
+      toast.error("Failed to generate image", { id: "generating" });
+      setIsGeneratingImage(false);
+      
+      if (headerRef.current) {
+        headerRef.current.style.display = "flex";
+      }
+    }
+  };
+
   return (
     <div className="container mx-auto max-w-4xl px-4">
       <header>
         <NavBar />
       </header>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
         <Card className="shadow-md">
           <CardHeader className="gap-0">
             <CardTitle className="flex items-center gap-2">
@@ -220,13 +371,22 @@ export default function Home() {
               </p>
               <span className="flex items-center justify-between gap-2">
                 <Label htmlFor="requiredHours">Total Required Hours:</Label>
-                <Input
-                  id="requiredHours"
-                  type="text"
-                  value={requiredHours}
-                  onChange={handleRequiredHoursChange}
-                  className="mt-1 w-24"
-                />
+                <span className="flex items-center gap-2">
+                  <Input
+                    id="requiredHours"
+                    type="text"
+                    value={requiredHours}
+                    onChange={handleRequiredHoursChange}
+                    className="mt-1 w-14 text-center"
+                    disabled={!isEditing}
+                  />
+                  {!isEditing && (
+                    <button className="text-sm text-primary cursor-pointer" onClick={() => setIsEditing(true)}> <Pencil className="w-4 h-4" /> </button>
+                  )}
+                  {isEditing && (
+                    <button className="text-sm text-primary cursor-pointer" onClick={() => setIsEditing(false)}> <Check className="w-4 h-4" /> </button>
+                  )}
+                </span>
               </span>
             </div>
           </CardFooter>
@@ -254,14 +414,23 @@ export default function Home() {
       </div>
 
       <div className="grid grid-cols-1 gap-6 mb-8">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <SquareActivity className="w-4 h-4" /> Block View
-            </CardTitle>
-            <CardDescription>
-              View your time entry history in a block view.
-            </CardDescription>
+        <Card ref={blockViewRef} data-card-ref="block-view">
+          <CardHeader ref={headerRef} className="flex flex-row items-center justify-between">
+            <span>
+              <CardTitle className="flex items-center gap-2">
+                <SquareActivity className="w-4 h-4" /> Block View
+              </CardTitle>
+              <CardDescription>
+                View your time entry history in a block view.
+              </CardDescription>
+            </span>
+            <button 
+              className="flex items-center gap-2 text-sm text-primary cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              onClick={handleShareBlockView}
+              disabled={isGeneratingImage}
+            >
+              {isGeneratingImage ? "Generating..." : "Share"} <Share className="w-4 h-4" />
+            </button>
           </CardHeader>
           <CardContent>
             <div className="flex flex-col gap-3">
