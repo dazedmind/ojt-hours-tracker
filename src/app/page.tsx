@@ -66,15 +66,18 @@ export default function Home() {
 
   useEffect(() => {
     setMounted(true);
+    // Initialize localStorage only on client side
+    if (typeof window !== "undefined") {
+      if (!localStorage.getItem("hours")) {
+        localStorage.setItem("hours", "0");
+      }
+      setRequiredHours(Number(localStorage.getItem("hours")) || 0);
+    }
   }, []);
 
   useEffect(() => {
-    if (!localStorage.getItem("hours")) {
-      localStorage.setItem("hours", "0");
-    }
-
     async function fetchEntries() {
-      if (!user?.id) {
+      if (!user?.id || userLoading || !entryContext) {
         return;
       }
 
@@ -82,16 +85,18 @@ export default function Home() {
 
       if (!ok) {
         toast.error("Error fetching entries");
+        setLoading(false);
         return;
       }
 
       if (!data) {
         toast.error("Error fetching entries");
+        setLoading(false);
         return;
       }
 
       setLoading(false);
-      entryContext!.setTimeEntries(
+      entryContext.setTimeEntries(
         data.map((entry) => ({
           ...entry,
         }))
@@ -99,14 +104,14 @@ export default function Home() {
     }
 
     fetchEntries();
-
-    setRequiredHours(Number(localStorage.getItem("hours")));
-  }, [userLoading]);
+  }, [user?.id, userLoading]);
 
   useEffect(() => {
+    if (!entryContext?.timeEntries) return;
+
     let totalHours = 0;
 
-    entryContext!.timeEntries.forEach((entryValue) => {
+    entryContext.timeEntries.forEach((entryValue) => {
       const totalInputHours = calculateEntryHours(
         entryValue.time_in,
         entryValue.time_out,
@@ -116,16 +121,20 @@ export default function Home() {
       totalHours += totalInputHours;
     });
 
-    localStorage.setItem("entries", JSON.stringify(entryContext!.timeEntries));
+    if (typeof window !== "undefined") {
+      localStorage.setItem("entries", JSON.stringify(entryContext.timeEntries));
+    }
 
     setCompletedHours(parseFloat(totalHours.toFixed(2)));
-  }, [entryContext!.timeEntries]);
+  }, [entryContext?.timeEntries]);
 
   const handleRequiredHoursChange = (
     e: React.ChangeEvent<HTMLInputElement>
   ): void => {
     const value = parseInt(e.target.value) || 0;
-    localStorage.setItem("hours", value.toString());
+    if (typeof window !== "undefined") {
+      localStorage.setItem("hours", value.toString());
+    }
     setRequiredHours(value);
   };
 
@@ -135,9 +144,19 @@ export default function Home() {
       return;
     }
 
+    if (!user?.id) {
+      toast.error("User not authenticated");
+      return;
+    }
+
+    if (!entryContext) {
+      toast.error("Context not available");
+      return;
+    }
+
     setIsSubmitting(true);
 
-    const { ok, data } = await actionCreateEntry(user!.id, {
+    const { ok, data } = await actionCreateEntry(user.id, {
       date: new Date(entryValue.date).toLocaleDateString(),
       time_in: entryValue.time_in,
       time_out: entryValue.time_out,
@@ -147,15 +166,17 @@ export default function Home() {
     console.log("Data: ", data);
     if (!ok) {
       toast.error("Error creating entry");
+      setIsSubmitting(false);
       return;
     }
 
     if (!data) {
       toast.error("No data ent");
+      setIsSubmitting(false);
       return;
     }
 
-    entryContext!.setTimeEntries((prev) => [
+    entryContext.setTimeEntries((prev) => [
       ...prev,
       { ...entryValue, id: data.id },
     ]);
@@ -317,6 +338,10 @@ export default function Home() {
     }
   };
 
+  if (!mounted) {
+    return null;
+  }
+
   return (
     <div className="container mx-auto max-w-4xl px-4">
       <header>
@@ -339,10 +364,10 @@ export default function Home() {
                 style={{
                   background: `conic-gradient(
                     ${
-                      mounted && theme === "dark" ? "#00472E" : "#00FF66"
+                      theme === "dark" ? "#00472E" : "#00FF66"
                     } ${completionPercentage}%,
                     ${
-                      mounted && theme === "dark" ? "#232323" : "#e9e9e9"
+                      theme === "dark" ? "#232323" : "#e9e9e9"
                     } ${completionPercentage}%
                   )`,
                 }}
@@ -447,7 +472,7 @@ export default function Home() {
                         key={index}
                         className={`w-4 h-4 rounded transition-colors ${
                           isCompleted
-                            ? mounted && theme === "dark"
+                            ? theme === "dark"
                               ? "bg-[#00472E]"
                               : "bg-[#00FF66]"
                             : "bg-accent"
@@ -464,7 +489,7 @@ export default function Home() {
                 <span className="inline-flex items-center gap-1">
                   <div
                     className={`w-3 h-3 rounded ${
-                      mounted && theme === "dark"
+                      theme === "dark"
                         ? "bg-[#00472E]"
                         : "bg-[#00FF66]"
                     }`}
@@ -498,7 +523,7 @@ export default function Home() {
             {loading && (
               <div className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" />
             )}
-            {entryContext!.timeEntries.length === 0 && !loading ? (
+            {!loading && (!entryContext || entryContext.timeEntries.length === 0) ? (
               <Alert>
                 <AlertCircle className="h-4 w-4" />
                 <AlertDescription>
@@ -507,26 +532,28 @@ export default function Home() {
                 </AlertDescription>
               </Alert>
             ) : (
-              <div className="space-y-4">
-                {entryContext!.timeEntries.map((entryValue, index) => {
-                  const totalInputHours = calculateEntryHours(
-                    entryValue.time_in,
-                    entryValue.time_out,
-                    entryValue.break_time
-                  );
-                  const totalHours = totalInputHours;
+              !loading && entryContext && (
+                <div className="space-y-4">
+                  {entryContext.timeEntries.map((entryValue, index) => {
+                    const totalInputHours = calculateEntryHours(
+                      entryValue.time_in,
+                      entryValue.time_out,
+                      entryValue.break_time
+                    );
+                    const totalHours = totalInputHours;
 
-                  return (
-                    <EntriesCard
-                      key={entryValue.id}
-                      index={index}
-                      entry={entryValue}
-                      totalInputHours={totalInputHours}
-                      totalHours={totalHours}
-                    />
-                  );
-                })}
-              </div>
+                    return (
+                      <EntriesCard
+                        key={entryValue.id}
+                        index={index}
+                        entry={entryValue}
+                        totalInputHours={totalInputHours}
+                        totalHours={totalHours}
+                      />
+                    );
+                  })}
+                </div>
+              )
             )}
           </CardContent>
         </Card>
