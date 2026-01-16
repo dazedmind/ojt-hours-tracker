@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useContext, useRef } from "react";
+import { useRouter } from "next/navigation";
 import {
   Card,
   CardContent,
@@ -30,11 +31,14 @@ import useEntryForm from "@/hooks/useEntryForm";
 import {
   actionCreateEntry,
   actionGetEntries,
+  actionGetRequiredHours,
+  actionSetRequiredHours,
   calculateEntryHours,
   EntriesCard,
   EntryContext,
   EntryForm,
 } from "@/modules/entries";
+import { actionCheckUserProfile } from "@/app/modules/users";
 import { useTheme } from "next-themes";
 import { Separator } from "@/components/ui/separator";
 import NavBar from "./modules/layout/NavBar";
@@ -42,6 +46,7 @@ import toast from "react-hot-toast";
 import html2canvas from "html2canvas";
 
 export default function Home() {
+  const router = useRouter();
   const {
     entryValue,
     setEntryValue,
@@ -68,6 +73,21 @@ export default function Home() {
       ? 0
       : Math.min(Math.round((completedHours / requiredHours) * 100), 100);
 
+  // Check if user needs onboarding
+  useEffect(() => {
+    async function checkOnboarding() {
+      if (userLoading) return;
+      
+      const { ok, needsOnboarding } = await actionCheckUserProfile();
+      
+      if (ok && needsOnboarding) {
+        router.push("/onboarding");
+      }
+    }
+
+    checkOnboarding();
+  }, [userLoading, router]);
+
   useEffect(() => {
     setMounted(true);
     // Initialize localStorage only on client side
@@ -79,6 +99,32 @@ export default function Home() {
       setRequiredHours(hours);
     }
   }, []);
+
+  useEffect(() => {
+    async function fetchRequiredHours() {
+      if (userLoading) {
+        return;
+      }
+      const { ok, data } = await actionGetRequiredHours(user?.id || "");
+      if (!ok) {
+        console.error("Failed to fetch required hours");
+        toast.error("Error fetching required hours");
+        setLoading(false);
+        return;
+      }
+      if (!data) {
+        console.warn("No data returned from fetch");
+        toast.error("Required hours not set");
+        setLoading(false);
+        return;
+      }
+      setRequiredHours(data.req_hours);
+      console.log("Required hours set successfully:", data.req_hours);
+    }
+    fetchRequiredHours();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id, userLoading]);
+
 
   useEffect(() => {
     async function fetchEntries() {
@@ -161,16 +207,6 @@ export default function Home() {
     setCurrentPage(1);
   }, [entryContext?.timeEntries]);
 
-  const handleRequiredHoursChange = (
-    e: React.ChangeEvent<HTMLInputElement>
-  ): void => {
-    const value = parseInt(e.target.value) || 0;
-    if (typeof window !== "undefined") {
-      localStorage.setItem("hours", value.toString());
-    }
-    setRequiredHours(value);
-  };
-
   const handleAddEntry = async () => {
     if (!entryValue.date) {
       alert("Please select a date");
@@ -226,6 +262,28 @@ export default function Home() {
     });
   };
 
+  const handleSetRequiredHours = async () => {
+    async function setRequiredHours() {
+      if (!user?.id) {
+        return;
+      }
+      const { ok, data } = await actionSetRequiredHours(user.id, requiredHours);
+      if (!ok) {
+        console.error("Failed to set required hours");
+        toast.error("Error setting required hours");
+        return;
+      }
+      if (!data) {
+        console.warn("No data returned from set required hours");
+        toast.error("No data returned");
+        return;
+      }
+    }
+    await setRequiredHours();
+
+    setIsEditing(false);
+  };
+
   const handleShareBlockView = async () => {
     if (!blockViewRef.current) {
       toast.error("Block view not found");
@@ -233,7 +291,7 @@ export default function Home() {
     }
 
     setIsGeneratingImage(true);
-    toast.loading("Generating story image...", { id: "generating" });
+    toast.loading("Generating image...", { id: "generating" });
 
     try {
       // Hide the header temporarily
@@ -357,7 +415,7 @@ export default function Home() {
         link.click();
         URL.revokeObjectURL(url);
 
-        toast.success("Story image downloaded!", { id: "generating" });
+        toast.success("Generated share card!", { id: "generating" });
         setIsGeneratingImage(false);
       }, "image/png");
     } catch (error) {
@@ -437,7 +495,7 @@ export default function Home() {
                       id="requiredHours"
                       type="text"
                       value={requiredHours || 0}
-                      onChange={handleRequiredHoursChange}
+                      onChange={(e) => setRequiredHours(parseInt(e.target.value))}
                       className="mt-1 w-14 text-center"
                       disabled={!isEditing}
                     />
@@ -445,7 +503,7 @@ export default function Home() {
                       <button className="text-sm text-primary cursor-pointer" onClick={() => setIsEditing(true)}> <Pencil className="w-4 h-4" /> </button>
                     )}
                     {isEditing && (
-                      <button className="text-sm text-primary cursor-pointer" onClick={() => setIsEditing(false)}> <Check className="w-4 h-4" /> </button>
+                      <button className="text-sm text-primary cursor-pointer" onClick={handleSetRequiredHours}> <Check className="w-4 h-4" /> </button>
                     )}
                   </span>
                 </span>

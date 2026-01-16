@@ -1,7 +1,7 @@
 "use server";
 
-import { createEntry, deleteEntry, getEntriesByUser, updateEntry } from "./repository";
-import { Entries } from "@/generated/client";
+import { createEntry, deleteEntry, getEntriesByUser, getRequiredHoursByUser, setRequiredHours, updateEntry } from "./repository";
+import { Entries, Users } from "@/generated/client";
 
 export async function actionGetEntries(userID: string): Promise<{
   ok: boolean;
@@ -15,6 +15,36 @@ export async function actionGetEntries(userID: string): Promise<{
     return { ok: true, data: entries };
   } catch (error) {
     console.error("[Server] Error fetching entries:", error);
+    return { ok: false, data: null };
+  }
+}
+
+export async function actionGetRequiredHours(userID: string): Promise<{
+  ok: boolean;
+  data: Users | null;
+}> {
+  try {
+    console.log("[Server] Fetching required hours for user:", userID);
+    const requiredHours = await getRequiredHoursByUser(userID);
+    console.log("[Server] Found required hours:", requiredHours);
+
+    return { ok: true, data: requiredHours };
+  } catch (error) {
+    console.error("[Server] Error fetching required hours:", error);
+    return { ok: false, data: null };
+  }
+}
+
+export async function actionSetRequiredHours(
+  userID: string,
+  requiredHours: number
+): Promise<{ ok: boolean; data: Users | null }> {
+  try {
+    const requiredHoursData = await setRequiredHours(userID, requiredHours);
+    console.log("[Server] Required hours set successfully:", requiredHours);
+    return { ok: true, data: requiredHoursData };
+  } catch (error) {
+    console.error("[Server] Error setting required hours:", error);
     return { ok: false, data: null };
   }
 }

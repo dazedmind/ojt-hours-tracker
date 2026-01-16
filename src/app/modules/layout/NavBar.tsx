@@ -3,11 +3,10 @@ import { ThemeSwitcher } from "@/components/theme-switcher";
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuLabel,
+  DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import Image from "next/image";
-import { Button } from "@/components/ui/button";
 import useAuthUser from "@/hooks/useAuthUser";
 import { createClient } from "@/utils/supabase/client";
 import toast from "react-hot-toast";
@@ -47,10 +46,21 @@ function NavBar() {
                 className="h-8 w-8 rounded-full"
               />
             </DropdownMenuTrigger>
+    
             <DropdownMenuContent align="end">
-                <DropdownMenuLabel className="text-center">
-                  <Button variant="ghost" onClick={onClickLogout}>Logout</Button>
-                </DropdownMenuLabel>
+                <DropdownMenuItem className="cursor-pointer py-2">
+                  <Image width={100} height={100} src={user?.user_metadata.avatar_url} alt="user pic" className="h-8 w-8 rounded-full" />
+                  <span className="flex flex-col">
+                    <span className="text-md font-medium">{user?.user_metadata.full_name}</span>
+                    <span className="text-xs">{user?.email}</span>
+                  </span>
+                </DropdownMenuItem>
+                <DropdownMenuItem className="cursor-pointer">
+                  <button onClick={onClickLogout}>Settings</button>
+                </DropdownMenuItem>
+                <DropdownMenuItem className="cursor-pointer">
+                  <button onClick={onClickLogout}>Logout</button>
+                </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         )}

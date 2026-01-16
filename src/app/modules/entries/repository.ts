@@ -1,5 +1,22 @@
-import { Entries } from "@/generated/client";
+import { Entries, Users } from "@/generated/client";
 import { prisma } from "@/utils/prisma";
+
+
+export async function getRequiredHoursByUser(uuid: string): Promise<Users | null> {
+
+  try{
+    const requiredHours = await prisma.users.findUnique({
+      where: {
+        id: uuid,
+      },
+    });
+    console.log("[Repository] Query successful, found:", requiredHours);
+    return requiredHours;
+  } catch (error) {
+    console.error("[Repository] Database query error:", error);
+    throw error;
+  }
+}  
 
 export async function getEntriesByUser(uuid: string): Promise<Entries[]> {
   console.log("[Repository] Fetching entries for user:", uuid);
@@ -60,5 +77,14 @@ export async function deleteEntry(id: number, uuid: string): Promise<Entries> {
       id,
       created_by: uuid,
     },
+  });
+}
+
+export async function setRequiredHours(userID: string, requiredHours: number): Promise<Users> {
+  return await prisma.users.update({
+    where: {
+      id: userID,
+    },
+    data: { req_hours: requiredHours },
   });
 }

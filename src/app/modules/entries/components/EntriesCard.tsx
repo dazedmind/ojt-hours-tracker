@@ -208,7 +208,7 @@ export default function EntriesCard({
               </DialogFooter>
             </DialogContent>
           </Dialog>
-          <Button
+        <Button
             disabled={isDeleting}
             variant="destructive"
             className="w-full md:w-fit"

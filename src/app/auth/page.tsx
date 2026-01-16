@@ -16,10 +16,23 @@ export default function AuthPage() {
   const supabase = createClient();
 
   useEffect(() => {
+    // Check if user is already logged in
+    const checkUser = async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      
+      if (user) {
+        window.location.href = "/";
+      }
+    };
+
+    checkUser();
+
     const { data: authListener } = supabase.auth.onAuthStateChange(
       (_, session) => {
         if (session) {
-          location.reload();
+          window.location.href = "/";
         }
       }
     );
