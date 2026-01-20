@@ -57,9 +57,13 @@ export default function EntryForm({
                 <Calendar
                   mode="single"
                   selected={date}
-                  captionLayout="dropdown"
-                  fromYear={new Date().getFullYear()}
-                  toYear={new Date().getFullYear() + 1}
+                  captionLayout="label"
+                  disableNavigation
+                  disabled={(date) => {
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    return date < today;
+                  }}
                   onSelect={(date) => {
                     setDate(date)
                     handleInputChange({

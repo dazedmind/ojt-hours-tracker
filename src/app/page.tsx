@@ -338,7 +338,7 @@ export default function Home() {
       // Draw clock icon (circle with clock hands)
       const iconSize = 80;
       const iconX = storyWidth / 2;
-      const iconY = 350;
+      const iconY = 300;
       
       // Draw circle
       ctx.strokeStyle = accentColor;
@@ -362,21 +362,27 @@ export default function Home() {
       ctx.lineTo(iconX + 20, iconY);
       ctx.stroke();
 
-      // Draw hours text
-      ctx.font = "bold 72px sans-serif";
+      ctx.font = "36px sans-serif";
       ctx.fillStyle = textColor;
       ctx.textAlign = "center";
-      ctx.fillText(`${completedHours} Hours`, storyWidth / 2, 480);
+      ctx.fillText(` Successfully Rendered`, storyWidth / 2, 400);
+
+
+      // Draw hours text
+      ctx.font = "bold 76px sans-serif";
+      ctx.fillStyle = accentColor;
+      ctx.textAlign = "center";
+      ctx.fillText(`${completedHours} Hours`, storyWidth / 2, 490);
 
       // Draw days completed text
-      ctx.font = "36px sans-serif";
+      ctx.font = "42px sans-serif";
       const completedDays = Math.round(completedHours / 8);
       const totalDays = Math.round(requiredHours / 8);
       ctx.fillStyle = accentColor;
       // ctx.fillText(`${completedDays}`, storyWidth / 2, 460);
       ctx.fillStyle = textColor;
       ctx.textAlign = "center";
-      ctx.fillText(` ${completedDays} / ${totalDays} days completed`, storyWidth / 2, 560);
+      ctx.fillText(` ${completedDays} / ${totalDays} days completed 🎉`, storyWidth / 2, 560);
 
       // Calculate block view card position
       const cardPadding = 80;
@@ -389,6 +395,19 @@ export default function Home() {
 
       // Draw the captured block view card
       ctx.drawImage(canvas, cardX, cardY, scaledCardWidth, scaledCardHeight);
+
+      // Load and draw logo above branding
+      const logo = new Image();
+      logo.src = "/lockin-logo.png";
+      await new Promise((resolve) => {
+        logo.onload = resolve;
+      });
+
+      // Draw logo centered above branding text
+      const logoSize = 100;
+      const logoX = (storyWidth - logoSize) / 2;
+      const logoY = storyHeight - 280;
+      ctx.drawImage(logo, logoX, logoY, logoSize, logoSize);
 
       // Add branding text at the bottom
       ctx.font = "bold 52px sans-serif";
@@ -436,7 +455,7 @@ export default function Home() {
       </header>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-        <Card className="shadow-md">
+        <Card className="shadow-md flex justify-between">
           <CardHeader className="gap-0">
             <CardTitle className="flex items-center gap-2">
               <FlagTriangleLeft className="w-4 h-4" />
@@ -447,7 +466,7 @@ export default function Home() {
           <CardContent className="flex flex-col items-center justify-center">
             {mounted ? (
               <>
-                <div className="relative w-40 h-40">
+                <div className="relative w-45 h-45">
                   <div
                     className="w-full h-full rounded-full"
                     style={{
@@ -465,7 +484,7 @@ export default function Home() {
                       <span className="text-4xl font-bold">
                         {completionPercentage}%
                       </span>
-                      <span className="text-sm">Complete</span>
+                      <span className="text-md">Complete</span>
                     </div>
                   </div>
                 </div>
@@ -474,7 +493,7 @@ export default function Home() {
                   <Progress value={completionPercentage} className="h-2" />
                   <div className="flex justify-between text-sm mt-2">
                     <span>{completedHours || 0} hours completed</span>
-                    <span>{requiredHours || 0} hours required</span>
+                    <span>{requiredHours - completedHours || 0} hours remaining</span>
                   </div>
                 </div>
               </>
@@ -485,9 +504,9 @@ export default function Home() {
           {mounted && (
             <CardFooter>
               <div className="w-full space-y-2">
-                <p className="text-sm">
+                {/* <p className="text-sm">
                   Remaining Hours: {Math.max(0, (requiredHours || 0) - (completedHours || 0))}
-                </p>
+                </p> */}
                 <span className="flex items-center justify-between gap-2">
                   <Label htmlFor="requiredHours">Total Required Hours:</Label>
                   <span className="flex items-center gap-2">
