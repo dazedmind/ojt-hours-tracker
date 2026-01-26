@@ -604,8 +604,8 @@ export default function Home() {
                     <p className="text-sm text-muted-foreground">Set required hours to see progress blocks</p>
                   )}
                 </div>
-                <div className="text-xs text-muted-foreground">
-                  <span className="inline-flex items-center gap-1">
+                <div className="flex text-xs text-muted-foreground">
+                  <span className="flex items-center gap-1">
                     <div
                       className={`w-3 h-3 rounded ${
                         theme === "dark"
@@ -613,14 +613,13 @@ export default function Home() {
                           : "bg-[#00FF66]"
                       }`}
                     ></div>
-                    Completed ({Math.round((completedHours || 0) / 8)} days)
+                    <p>Completed ({Math.round((completedHours || 0) / 8)} days)</p>
                   </span>
-                  <span className="inline-flex items-center gap-1 ml-3">
+                  <span className="flex items-center gap-1 ml-3">
                     <div className="w-3 h-3 rounded bg-accent"></div>
-                    Remaining (
-                    {Math.max(0, Math.round((requiredHours || 0) / 8) -
+                    <p>Remaining ({Math.max(0, Math.round((requiredHours || 0) / 8) -
                       Math.round((completedHours || 0) / 8))}{" "}
-                    days)
+                    days)</p>
                   </span>
                 </div>
               </div>
