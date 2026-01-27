@@ -22,6 +22,7 @@ export default function EntryForm({
   handleInputChange,
   handleAddEntry,
   handleUpdateEntry,
+  handleCancel,
 }: {
   data: NewTimeEntry;
   isUpdate: boolean;
@@ -29,6 +30,7 @@ export default function EntryForm({
   handleInputChange: React.ChangeEventHandler<HTMLInputElement>;
   handleAddEntry?: () => Promise<void>;
   handleUpdateEntry?: () => Promise<void>;
+  handleCancel?: () => void;
 }) {
 
   const [date, setDate] = useState<Date | undefined>(undefined);
@@ -37,7 +39,7 @@ export default function EntryForm({
       <main>
         <div className="space-y-4">
           <div>
-            <Label htmlFor="date" className="flex items-center gap-1 mb-2">
+            <Label htmlFor="date" className="flex items-center gap-1 mb-3">
               <CalendarIcon className="w-4 h-4" />
               Enter Date
             </Label>
@@ -80,12 +82,12 @@ export default function EntryForm({
           </div>
 
           <div>
-            <Label className="flex items-center gap-1">
+            <Label className="flex items-center gap-1 mb-3">
               <Clock className="w-4 h-4" />
               Time In and Time Out
             </Label>
             <div className="flex gap-2 mt-1">
-              <div className="w-1/2">
+              <div className="w-1/2 flex flex-col items-center">
                 <Input
                   type="time"
                   name="time_in"
@@ -96,7 +98,7 @@ export default function EntryForm({
                 />
                 <span className="text-xs text-gray-500">Time In</span>
               </div>
-              <div className="w-1/2">
+              <div className="w-1/2 flex flex-col items-center">
                 <Input
                   type="time"
                   name="time_out"
@@ -111,7 +113,7 @@ export default function EntryForm({
           </div>
 
           <div>
-            <Label htmlFor="break_time" className="flex items-center gap-1 mb-2">
+            <Label htmlFor="break_time" className="flex items-center gap-1 mb-3">
               <Coffee className="w-4 h-4" />
               Break Time
             </Label>
@@ -139,7 +141,19 @@ export default function EntryForm({
           </div>
         </div>
 
-        <div className="mt-4">
+        <div className="flex w-auto space-x-2 mt-6">
+          {isUpdate && (
+            <div className="w-1/2">
+              <Button
+                variant="outline"
+                className="w-full text-foreground"
+                onClick={handleCancel}
+              >
+                Cancel
+              </Button>
+            </div>
+        
+          )}
           {!isUpdate ? (
             <Button
               disabled={isSubmitting}
@@ -153,17 +167,19 @@ export default function EntryForm({
               )}
             </Button>
           ) : (
-            <Button
-              disabled={isSubmitting}
-              className="w-full text-foreground"
-              onClick={handleUpdateEntry}
-            >
-              {isSubmitting ? (
-                <div className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" />
-              ) : (
-                <p>Update Time Entry</p>
-              )}
-            </Button>
+            <div className="w-1/2">
+              <Button
+                disabled={isSubmitting}
+                className="w-full text-foreground"
+                onClick={handleUpdateEntry}
+              >
+                {isSubmitting ? (
+                  <div className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" />
+                ) : (
+                  <p>Update Time Entry</p>
+                )}
+              </Button>
+            </div>
           )}
         </div>
        

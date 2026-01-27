@@ -515,7 +515,7 @@ export default function Home() {
                       type="text"
                       value={requiredHours || 0}
                       onChange={(e) => setRequiredHours(parseInt(e.target.value))}
-                      className="mt-1 w-14 text-center"
+                      className="mt-1 w-14 text-center border-none shadow-none outline-none"
                       disabled={!isEditing}
                     />
                     {!isEditing && (
@@ -564,7 +564,7 @@ export default function Home() {
               </CardDescription>
             </span>
             <button 
-              className="flex items-center gap-2 text-sm text-primary cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex sm:hidden items-center gap-2 text-sm text-primary cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               onClick={handleShareBlockView}
               disabled={isGeneratingImage}
             >

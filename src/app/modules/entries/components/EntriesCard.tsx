@@ -2,10 +2,8 @@
 
 import {
   Dialog,
-  DialogClose,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -60,7 +58,8 @@ export default function EntriesCard({
   const { user } = useAuthUser();
 
   const [isDeleting, setIsDeleting] = useState<boolean>(false);
-
+  const [isOpenDialog, setIsOpenDialog] = useState<boolean>(false);
+  
   const handleUpdateEntry = async (id: number) => {
     if (!entryValue.date) {
       alert("Please select a date");
@@ -162,7 +161,7 @@ export default function EntriesCard({
 
         {/* BUTTON ACTIONS */}
         <div className="mt-2 flex flex-col md:flex-row justify-end gap-3 items-center">
-          <Dialog key={index}>
+          <Dialog key={index} open={isOpenDialog} onOpenChange={setIsOpenDialog}>
             <DialogTrigger asChild>
               <Button
                 onClick={() =>
@@ -193,19 +192,8 @@ export default function EntriesCard({
                 isSubmitting={isSubmitting}
                 isUpdate={true}
                 handleUpdateEntry={() => handleUpdateEntry(entry.id)}
+                handleCancel={() => setIsOpenDialog(false)}
               />
-              <DialogFooter>
-                <DialogClose asChild>
-                  <Button
-                    disabled={isSubmitting}
-                    variant="outline"
-                    type="button"
-                    className="w-full"
-                  >
-                    Close
-                  </Button>
-                </DialogClose>
-              </DialogFooter>
             </DialogContent>
           </Dialog>
         <Button
