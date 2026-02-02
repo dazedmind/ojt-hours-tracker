@@ -21,11 +21,18 @@ import {
   History,
   Hourglass,
   Pencil,
+  PencilIcon,
   Share,
   SquareActivity,
+  Trash,
 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import useAuthUser from "@/hooks/useAuthUser";
 import useEntryForm from "@/hooks/useEntryForm";
 import {
@@ -33,6 +40,7 @@ import {
   actionGetEntries,
   actionGetRequiredHours,
   actionSetRequiredHours,
+  actionUpdateEntry,
   calculateEntryHours,
   EntriesCard,
   EntryContext,
@@ -63,6 +71,10 @@ export default function Home() {
   const [isEditing, setIsEditing] = useState<boolean>(false);
   const [isGeneratingImage, setIsGeneratingImage] = useState<boolean>(false);
   const [currentPage, setCurrentPage] = useState<number>(1);
+  const [editingNoteId, setEditingNoteId] = useState<number | null>(null);
+  const [isEditingNote, setIsEditingNote] = useState<boolean>(false);
+  const [editingNoteValue, setEditingNoteValue] = useState<string>("");
+  const [isSavingNote, setIsSavingNote] = useState<boolean>(false);
   const entriesPerPage = 5;
   const { user, userLoading } = useAuthUser();
   const { theme } = useTheme();
@@ -230,6 +242,7 @@ export default function Home() {
       time_in: entryValue.time_in,
       time_out: entryValue.time_out,
       break_time: entryValue.break_time,
+      note: entryValue.note || "",
     });
 
     console.log("Data: ", data);
@@ -259,7 +272,15 @@ export default function Home() {
       time_in: "",
       time_out: "",
       break_time: "",
+      note: "",
     });
+  };
+
+  const handleEditNote = (entryId: number) => {
+    setEditingNoteId(entryId);
+    setIsEditingNote(true);
+    setEditingNoteValue(entryContext!.timeEntries.find(e => e.id === entryId)?.note || "");
+
   };
 
   const handleSetRequiredHours = async () => {
@@ -282,6 +303,54 @@ export default function Home() {
     await setRequiredHours();
 
     setIsEditing(false);
+    setIsEditingNote(false);
+  };
+
+  const handleSaveNote = async (entryId: number) => {
+    if (!user?.id) {
+      toast.error("User not authenticated");
+      return;
+    }
+
+    if (!entryContext) {
+      toast.error("Context not available");
+      return;
+    }
+
+    setIsSavingNote(true);
+
+    try {
+      const { ok } = await actionUpdateEntry(entryId, user.id, {
+        date: entryContext.timeEntries.find(e => e.id === entryId)?.date || "",
+        time_in: entryContext.timeEntries.find(e => e.id === entryId)?.time_in || "",
+        time_out: entryContext.timeEntries.find(e => e.id === entryId)?.time_out || "",
+        break_time: entryContext.timeEntries.find(e => e.id === entryId)?.break_time || "",
+        note: editingNoteValue,
+      });
+
+      if (!ok) {
+        toast.error("Failed to update note");
+        setIsSavingNote(false);
+        return;
+      }
+
+      // Update local state
+      entryContext.setTimeEntries((prev) =>
+        prev.map((entry) =>
+          entry.id === entryId ? { ...entry, note: editingNoteValue } : entry
+        )
+      );
+
+      toast.success("Note updated successfully");
+      setEditingNoteId(null);
+      setEditingNoteValue("");
+      setIsEditingNote(false);
+    } catch (error) {
+      console.error("Error updating note:", error);
+      toast.error("Failed to update note");
+    } finally {
+      setIsSavingNote(false);
+    }
   };
 
   const handleShareBlockView = async () => {
@@ -580,46 +649,150 @@ export default function Home() {
                 </div>
                 <div className="flex flex-wrap items-center gap-1">
                   {Math.round((requiredHours || 0) / 8) > 0 ? (
-                    Array.from({ length: Math.round((requiredHours || 0) / 8) }).map(
-                      (_, index) => {
-                        const isCompleted = index < Math.round((completedHours || 0) / 8);
-                        return (
-                          <div
-                            key={index}
-                            className={`w-4 h-4 rounded transition-colors ${
-                              isCompleted
-                                ? theme === "dark"
-                                  ? "bg-[#00472E]"
-                                  : "bg-[#00FF66]"
-                                : "bg-accent"
-                            }`}
-                            title={`Day ${index + 1}${
-                              isCompleted ? " - Completed" : " - Pending"
-                            }`}
-                          />
+                    (() => {
+                      // Create a map of dates to entries and calculate hours
+                      const entriesMap = new Map();
+                      entryContext?.timeEntries.forEach((entry) => {
+                        const hours = calculateEntryHours(
+                          entry.time_in,
+                          entry.time_out,
+                          entry.break_time
+                        );
+                        entriesMap.set(entry.date, { ...entry, hours });
+                      });
+
+                      // Sort entries by date chronologically
+                      const sortedEntries = Array.from(entriesMap.values()).sort(
+                        (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+                      );
+
+                      const blocks = [];
+                      const totalDays = Math.round((requiredHours || 0) / 8);
+
+                      // Create blocks for each day
+                      for (let i = 0; i < totalDays; i++) {
+                        const dayNumber = i + 1;
+                        // Map each entry to a block by its chronological position
+                        const blockEntry = sortedEntries[i] || null;
+                        const isOvertime = blockEntry ? blockEntry.hours > 8 : false;
+                        const isCompleted = blockEntry !== null;
+
+                        blocks.push(
+                          <Popover key={i}>
+                            <PopoverTrigger asChild>
+                              <div
+                                className={`w-4 h-4 rounded transition-all cursor-pointer hover:scale-105 ${
+                                  isCompleted
+                                    ? isOvertime
+                                      ? theme === "dark"
+                                        ? "bg-[#076644]"
+                                        : "bg-green-600"
+                                      : theme === "dark"
+                                        ? "bg-[#00472E]"
+                                        : "bg-[#00FF66]"
+                                    : "bg-accent"
+                                }`}
+                              />
+                            </PopoverTrigger>
+                            <PopoverContent className="w-64 p-3">
+                              {blockEntry ? (
+                                <div className="space-y-2">
+                                  <div className="font-semibold text-sm">Day {dayNumber}</div>
+                                  <div className="text-xs space-y-1">
+                                    <p><span className="font-medium">Date:</span> {new Date(blockEntry.date).toLocaleDateString("en-US", {
+                                      weekday: "short",
+                                      year: "numeric",
+                                      month: "short",
+                                      day: "numeric",
+                                    })}</p>
+                                    <p><span className="font-medium">Hours:</span> {blockEntry.hours} hours {isOvertime && <span className="text-green-500">(Overtime!)</span>}</p>
+                             
+                                    <div className="mt-2 pt-2 border-t">
+                                      <div className="flex items-center justify-between mb-1">
+                                        <p className="font-medium">Note:</p>
+                                      </div>
+                                      
+                                      <span className="flex items-start gap-1">
+                                        <textarea
+                                          disabled={!isEditingNote && blockEntry.note !== ""}
+                                          value={editingNoteId === blockEntry.id ? editingNoteValue : blockEntry.note || ""}
+                                          onChange={(e) => {
+                                            setEditingNoteId(blockEntry.id);
+                                            setEditingNoteValue(e.target.value);
+                                          }}
+                                          maxLength={60}
+                                          placeholder="Add a note..."
+                                          className="w-full text-xs border-none shadow-none outline-none text-wrap resize-none min-h-10"
+                                        />
+                                        {editingNoteId === blockEntry.id && (
+                                            <button
+                                              onClick={() => handleSaveNote(blockEntry.id)}
+                                              disabled={isSavingNote}
+                                              className="text-primary hover:text-primary/80 disabled:opacity-50"
+                                            >
+                                              {isSavingNote ? (
+                                                <div className="h-3 w-3 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                                              ) : (
+                                                <Check className="w-3 h-3" />
+                                              )}
+                                            </button>
+                                          )}
+                                          {blockEntry.note !== "" && !isEditingNote && (
+                                            <button
+                                              onClick={() => handleEditNote(blockEntry.id)}
+                                              className="text-primary hover:text-primary/80"
+                                            >
+                                              <PencilIcon className="w-3 h-3" />
+                                            </button>
+                                          )}
+                                      </span>
+                                      
+                                      
+                                    </div>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="space-y-2">
+                                  <div className="font-semibold text-sm">Day {dayNumber}</div>
+                                  <p className="text-xs text-muted-foreground">
+                                    Not yet completed
+                                  </p>
+                                </div>
+                              )}
+                            </PopoverContent>
+                          </Popover>
                         );
                       }
-                    )
+
+                      return blocks;
+                    })()
                   ) : (
                     <p className="text-sm text-muted-foreground">Set required hours to see progress blocks</p>
                   )}
                 </div>
-                <div className="flex text-xs text-muted-foreground">
-                  <span className="flex items-center gap-1">
+                <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+                  <span className="flex items-center gap-1.5">
                     <div
-                      className={`w-3 h-3 rounded ${
+                      className={`w-3 h-3 rounded shrink-0 ${
                         theme === "dark"
                           ? "bg-[#00472E]"
                           : "bg-[#00FF66]"
                       }`}
                     ></div>
-                    <p>Completed ({Math.round((completedHours || 0) / 8)} days)</p>
+                    <span>Completed ({Math.round((completedHours || 0) / 8)} days)</span>
                   </span>
-                  <span className="flex items-center gap-1 ml-3">
-                    <div className="w-3 h-3 rounded bg-accent"></div>
-                    <p>Remaining ({Math.max(0, Math.round((requiredHours || 0) / 8) -
+                  <span className="flex items-center gap-1.5">
+                    <div className={`w-3 h-3 rounded shrink-0 ${
+                      theme === "dark" ? "bg-[#076644]" : "bg-green-600"
+                    }`}></div>
+                    <span>Overtime (&gt;8 hrs)</span>
+                  </span>
+                  <span className="flex items-center gap-1.5">
+                    <div className="w-3 h-3 rounded bg-accent shrink-0"></div>
+                    <span>Remaining (
+                    {Math.max(0, Math.round((requiredHours || 0) / 8) -
                       Math.round((completedHours || 0) / 8))}{" "}
-                    days)</p>
+                    days)</span>
                   </span>
                 </div>
               </div>

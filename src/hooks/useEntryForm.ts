@@ -9,6 +9,7 @@ export default function useEntryForm() {
     time_in: "",
     time_out: "",
     break_time: "",
+    note: "",
   });
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>): void => {

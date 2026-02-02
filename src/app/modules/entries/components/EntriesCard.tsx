@@ -78,6 +78,7 @@ export default function EntriesCard({
       time_in: entryValue.time_in,
       time_out: entryValue.time_out,
       break_time: entryValue.break_time,
+      note: entryValue.note,
     });
 
     if (!ok) {
@@ -157,6 +158,11 @@ export default function EntriesCard({
               {totalHours.toFixed(2)} hours
             </span>
           </div>
+          {entry.note && (
+            <div className="text-sm text-muted-foreground mt-2 italic">
+              <span className="font-medium">Note:</span> {entry.note}
+            </div>
+          )}
         </div>
 
         {/* BUTTON ACTIONS */}
@@ -170,6 +176,7 @@ export default function EntriesCard({
                     time_in: entry.time_in,
                     time_out: entry.time_out,
                     break_time: entry.break_time,
+                    note: entry.note || "",
                   })
                 }
                 variant="secondary"

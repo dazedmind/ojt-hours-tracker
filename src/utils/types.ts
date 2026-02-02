@@ -4,6 +4,7 @@ export interface TimeEntry {
   time_in: string;
   time_out: string;
   break_time: string;
+  note?: string;
 }
 
 export type NewTimeEntry = Omit<TimeEntry, "id">;
