@@ -24,7 +24,6 @@ import {
   PencilIcon,
   Share,
   SquareActivity,
-  Trash,
 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -52,6 +51,7 @@ import { Separator } from "@/components/ui/separator";
 import NavBar from "./modules/layout/NavBar";
 import toast from "react-hot-toast";
 import html2canvas from "html2canvas";
+import { TimeEntry } from "@/utils/types";
 
 export default function Home() {
   const router = useRouter();
@@ -179,7 +179,7 @@ export default function Home() {
         }
 
         console.log("Setting entries:", data);
-        entryContext.setTimeEntries(data);
+        entryContext.setTimeEntries(data as TimeEntry[]);
         setLoading(false);
         console.log("Entries set successfully:", data.length);
       } catch (error) {
@@ -264,6 +264,9 @@ export default function Home() {
     ]);
 
     toast.success("Added entry successfully");
+
+    // Reset to first page to show the new entry
+    setCurrentPage(1);
 
     setIsSubmitting(false);
 
@@ -829,8 +832,13 @@ export default function Home() {
               </Alert>
             ) : (
               !loading && entryContext && (() => {
-                // Sort entries by ID descending (most recent first)
-                const sortedEntries = [...entryContext.timeEntries].sort((a, b) => b.id - a.id);
+                // Sort entries by date descending (most recent first), then by ID
+                const sortedEntries = [...entryContext.timeEntries].sort((a, b) => {
+                  // First sort by date (most recent first)
+                  const dateCompare = new Date(b.date).getTime() - new Date(a.date).getTime();
+                  // If dates are equal, sort by ID (most recent first)
+                  return dateCompare !== 0 ? dateCompare : b.id - a.id;
+                });
                 
                 // Calculate pagination
                 const totalEntries = sortedEntries.length;

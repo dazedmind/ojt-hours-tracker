@@ -78,7 +78,7 @@ export default function EntriesCard({
       time_in: entryValue.time_in,
       time_out: entryValue.time_out,
       break_time: entryValue.break_time,
-      note: entryValue.note,
+      note: entryValue.note || "",
     });
 
     if (!ok) {
